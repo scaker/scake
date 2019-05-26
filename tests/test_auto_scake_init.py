@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-import scake
+from scake.setup import ScakeSetup
+from scake.auto import AutoScake
+from scake.structure import ScakeDict
 
 class FooClass():
     def __init__(self, a, b=10, c=''):
@@ -14,7 +16,7 @@ class BarClass():
         self.z = z
     
 # set up scake
-scake.setup(classes_dict=globals())
+ScakeSetup.setup(classes_dict=globals())
 
 def test_init_dict():
     data = {
@@ -24,8 +26,8 @@ def test_init_dict():
         }
     }
     
-    auto = scake.AutoScake(data)    
-    assert isinstance(auto.obj, scake.ScakeDict)
+    auto = AutoScake(data)    
+    assert isinstance(auto.obj, ScakeDict)
     assert auto.obj == data
     assert auto.exec_graph == data
     assert auto.foo == data['foo']
@@ -40,7 +42,7 @@ def test_init_class():
         }
     }
     
-    auto = scake.AutoScake(data)
+    auto = AutoScake(data)
     assert isinstance(auto.obj, FooClass)
     assert auto.obj.a == 5
     assert auto.obj.c == 'custom'
@@ -61,7 +63,7 @@ def test_init_class_param_class():
         }
     }
     
-    auto = scake.AutoScake(data)
+    auto = AutoScake(data)
     assert isinstance(auto.obj, FooClass)
     assert isinstance(auto.obj.c, BarClass)
     assert auto.obj.c.x == 1

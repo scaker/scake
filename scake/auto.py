@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import inspect
-from .ScakeSetup import ScakeSetup
-from .ScakeDict import ScakeDict
+#from .ScakeSetup import ScakeSetup
+#from .ScakeDict import ScakeDict
+
+from scake.setup import ScakeSetup
+from scake.structure import ScakeDict
 
 class AutoScake():
     def __init__(self, exec_graph):
