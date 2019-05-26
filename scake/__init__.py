@@ -2,7 +2,11 @@
 
 __version__ = "0.1.0"
 
-from .AutoInit import AutoInit
+from .ScakeSetup import ScakeSetup
+from .AutoScake import AutoScake
+from .ScakeDict import ScakeDict
 
-def setup(classes_dict):
-    AutoInit.update_classes_dict(new_classes_dict=classes_dict)
+def setup(classes_dict=None):
+    if classes_dict is not None:
+        ScakeSetup.CLASSES_DICT.update(classes_dict)
+    pass
