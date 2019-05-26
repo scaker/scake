@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import inspect
-#from .ScakeSetup import ScakeSetup
-#from .ScakeDict import ScakeDict
-
+import sys
 from scake.setup import ScakeSetup
 from scake.structure import ScakeDict
 
@@ -38,10 +36,12 @@ class AutoScake():
         # loop up in "CLASSES_DICT"
         obj_class = ScakeSetup.CLASSES_DICT[class_str]        
         init_params = param_dict
-
-        #deprecated
-        #names, varargs, keywords, defaults = inspect.getargspec(obj_class.__init__) #ArgSpec(args=['self', 'a', 'b', 'c'], varargs=None, keywords=None, defaults=(10, ''))
-        names, varargs, keywords, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(obj_class.__init__) # https://docs.python.org/3.4/library/inspect.html#inspect.getfullargspec
+        
+        major, minor, micro, _, _ = sys.version_info
+        if major == 2:
+            names, varargs, keywords, defaults = inspect.getargspec(obj_class.__init__) #ArgSpec(args=['self', 'a', 'b', 'c'], varargs=None, keywords=None, defaults=(10, ''))
+        else:
+            names, varargs, keywords, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(obj_class.__init__) # https://docs.python.org/3.4/library/inspect.html#inspect.getfullargspec
         names = names[1:]
         defaults = [] if not defaults else defaults
         if len(names) > len(defaults):
