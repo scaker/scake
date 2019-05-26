@@ -18,6 +18,56 @@ class BarClass():
 # set up scake
 ScakeSetup.setup(classes_dict=globals())
 
+
+def test_init_scake_keyword_more_complex():
+    data = {
+        'field_1': {
+            'FooClass': {
+                'a': 1,
+                'b': 2,
+                'c': 3
+            }
+        },
+        'field_2': {
+            'BarClass': {
+                'x': 'scake.field_1.a',
+                'y': 'scake.field_1.FooClass.b',
+                'z': 'scake.field_1.FooClass.c'
+            }
+        }
+    }
+    
+    auto = AutoScake(data)
+    assert isinstance(auto.field_1, FooClass)
+    assert isinstance(auto.field_2, BarClass)
+    assert auto.field_1.FooClass == {'a':1, 'b':2, 'c':3}
+    assert auto.field_2.BarClass == {'x':1, 'y':2, 'z':3}
+    assert auto.field_2.x == 1 and auto.field_2.y == 2 and auto.field_2.z == 3
+
+def test_init_with_value_has_scake_keyword():
+    data = {
+        'FooClass': {
+            'a': 5,
+            'b': 8,
+            'c': {
+                'BarClass': {
+                    'x': 1,
+                    'y': 2,
+                    'z': 'scake.FooClass.a'
+                }
+            }
+        }
+    }
+    
+    auto = AutoScake(data)
+    assert auto.obj.c.z == 5
+    assert isinstance(auto.obj, FooClass)
+    assert isinstance(auto.obj.c, BarClass)
+    assert auto.FooClass.a == 5
+    assert auto.FooClass.b == 8
+    assert isinstance(auto.FooClass.c, BarClass)
+    assert auto.FooClass.c.BarClass == {'x': 1, 'y': 2, 'z': 5}
+    
 def test_init_dict():
     data = {
         'foo': {

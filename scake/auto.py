@@ -5,32 +5,93 @@ from scake.setup import ScakeSetup
 from scake.structure import ScakeDict
 
 class AutoScake():
-    def __init__(self, exec_graph):
+    def __init__(self, exec_graph, node_path=['scake'], root=None):
         assert isinstance(exec_graph, dict) or isinstance(exec_graph, ScakeDict)
         self.exec_graph = exec_graph
+        self.node_path = node_path
+        self.root = root if root else self
+        self.is_done_init = True
+        self.wait_dict = {}
         
+        parsed_dict = self.__init_exec_graph(self.exec_graph)
+        
+        setattr(parsed_dict, 'is_done_init', self.is_done_init)
+        self.obj = parsed_dict
+        
+        if len(node_path) == 1 and len(self.wait_dict) > 0:
+            self.__check_wait_dict_and_reinit()
+        
+        pass
+    
+    def __check_wait_dict_and_reinit(self):        
+        last_length_wait_dict = len(self.wait_dict)
+        while True:
+            self.obj = self.__init_exec_graph(self.exec_graph)
+            if len(self.wait_dict) == 0 or len(self.wait_dict) == last_length_wait_dict:
+                break
+            last_length_wait_dict = len(self.wait_dict)
+        pass
+    
+    def __get_scake_component(self, component_str, root):
+        nodes = component_str.split('.')[1:]
+        result = None
+        ptr = root
+        for n in nodes:
+            if hasattr(ptr, n):
+                ptr = getattr(ptr, n)
+            else:
+                return None
+        result = ptr
+        return result
+    
+    def __init_exec_graph(self, exec_graph):
         parsed_dict = ScakeDict()
-        for key, value in exec_graph.items():            
+        for key, value in exec_graph.items():
             if isinstance(value, dict):
-                auto = AutoScake(value)
+                updated_node_path = self.node_path.copy()
+                updated_node_path.append(key)
+                auto = AutoScake(exec_graph=value, 
+                                 node_path=updated_node_path, 
+                                 root=self.root)
                 setattr(self, key, auto.obj)
                 parsed_dict[key] = auto.obj
             else:
                 if isinstance(value, str) and value.startswith('scake'):
-                    # todo
+                    if value.count('.') == 0:
+                        raise Exception('Invalid reference to scake component: %s' % value)
+                    component = self.__get_scake_component(component_str=value, root=self.root)
+                    if component:
+                        setattr(self, key, component)
+                        parsed_dict[key] = component
+                        self.root.wait_dict.pop(value, None)
+                    else:
+                        print('Component not found @', value)
+                        self.is_done_init = False
+                        self.root.wait_dict[value] = '.'.join(self.node_path)
+                        print('self.root.wait_dict', self.root.wait_dict)
+                        pass
                     pass
                 else:
                     setattr(self, key, value)
                     parsed_dict[key] = value
             
             if key in ScakeSetup.CLASSES_DICT.keys():
-                parsed_dict = self.__init_instance(class_str=key, param_dict=getattr(self, key))
-                break
-            
+                auto = getattr(self, key)
+                if auto.is_done_init:
+                    new_instance = self.__init_instance(class_str=key, param_dict=auto) # override self.obj
+                    # copy all parsed_dict to the new instance
+                    for pkey, pvalue in parsed_dict.items():
+                        setattr(new_instance, pkey, pvalue)
+                    parsed_dict = new_instance
+                else:
+                    print('** Component not found @', value)
+                    self.is_done_init = False
+                    ##self.root.wait_dict[value] = '.'.join(node_path)
+                    print('self.root.wait_dict', self.root.wait_dict)
+                    pass
+                break            
             pass
-        
-        self.obj = parsed_dict
-        pass
+        return parsed_dict
     
     def __init_instance(self, class_str, param_dict):
         # loop up in "CLASSES_DICT"

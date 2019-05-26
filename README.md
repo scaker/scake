@@ -5,14 +5,16 @@ A flexible framework for Python
     <tr>
         <td>License</td>
         <td><img src='https://img.shields.io/pypi/l/scake.svg'></td>
-        <td>Version</td>
-        <td><img src='https://img.shields.io/pypi/v/scake.svg'></td>
+        <td>Travis CI</td>
+        <td>Master: <img src='https://api.travis-ci.org/kyzas/scake.svg?branch=master'><br/>
+        Staging: <img src='https://api.travis-ci.org/kyzas/scake.svg?branch=staging'></td>
     </tr>
     <tr>
-        <td>Travis CI</td>
-        <td><img src='https://api.travis-ci.org/kyzas/scake.svg?branch=master'></td>
+        <td>Version</td>
+        <td><img src='https://img.shields.io/pypi/v/scake.svg'></td>        
         <td>Coverage</td>
-        <td><img src='https://codecov.io/gh/kyzas/scake/branch/master/graph/badge.svg'></td>
+        <td>Master: <img src='https://codecov.io/gh/kyzas/scake/branch/master/graph/badge.svg'><br/>
+        Staging: <img src='https://codecov.io/gh/kyzas/scake/branch/staging/graph/badge.svg'></td>
     </tr>
     <tr>
         <td>Wheel</td>
