@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-from scake.setup import ScakeSetup
-from scake.auto import AutoScake
-from scake.structure import ScakeDict
+from scake import Scake, AutoScake, ScakeDict
 
 class FooClass():
     def __init__(self, a, b=10, c=''):
@@ -16,7 +14,7 @@ class BarClass():
         self.z = z
     
 # set up scake
-ScakeSetup.setup(classes_dict=globals())
+Scake.app(classes=globals())
 
 
 def test_init_scake_keyword_more_complex():

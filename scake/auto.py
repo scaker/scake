@@ -1,11 +1,21 @@
 # -*- coding: utf-8 -*-
-import inspect
+import os
 import sys
-from scake.setup import ScakeSetup
+import inspect
+import yaml
+from scake.scake import Scake
 from scake.structure import ScakeDict
 
 class AutoScake():
     def __init__(self, exec_graph, node_path=['scake'], root=None):
+        if isinstance(exec_graph, dict) or isinstance(exec_graph, ScakeDict):
+            # no pre-processing
+            pass
+        elif os.path.isfile(exec_graph) and (exec_graph.endswith('.yaml') or exec_graph.endswith('.yml')):
+            with open(exec_graph) as f:
+                data_dict = yaml.safe_load(f)
+            exec_graph = data_dict
+        
         assert isinstance(exec_graph, dict) or isinstance(exec_graph, ScakeDict)
         self.exec_graph = exec_graph
         self.node_path = node_path
@@ -21,6 +31,23 @@ class AutoScake():
         if len(node_path) == 1 and len(self.wait_dict) > 0:
             self.__check_wait_dict_and_reinit()
         
+        pass
+    
+    def run(self):
+        self.__run_recursive(self.__dict__)
+        pass
+    
+    def __run_recursive(self, root):
+        for key, value in root.items():
+            if key in ['obj', 'root', 'exec_graph'] or isinstance(value, AutoScake): # skip special keys
+                continue
+            if isinstance(value, dict):
+                self.__run_recursive(value)
+            elif '__call__' in dir(value):
+                result = value()
+                print('value.__dict__', value.__dict__)
+                for wfield in getattr(value, '_scake_waiting_fields'):
+                    setattr(value, wfield, result)
         pass
     
     def __check_wait_dict_and_reinit(self):        
@@ -74,14 +101,23 @@ class AutoScake():
                 else:
                     setattr(self, key, value)
                     parsed_dict[key] = value
+                    print('parsed_dict', parsed_dict)
+            pass
             
-            if key in ScakeSetup.CLASSES_DICT.keys():
+        for key, value in exec_graph.items():
+            if key in Scake.CLASSES_DICT.keys():
                 auto = getattr(self, key)
                 if auto.is_done_init:
                     new_instance = self.__init_instance(class_str=key, param_dict=auto) # override self.obj
+                    waiting_fields = []
                     # copy all parsed_dict to the new instance
                     for pkey, pvalue in parsed_dict.items():
-                        setattr(new_instance, pkey, pvalue)
+                        print('key value:', key, value)
+                        if pvalue is None or pvalue in ['()', '__call__', '__call__()']: # this variable will handle the result of __call__() method
+                            waiting_fields.append(pkey)
+                        else:
+                            setattr(new_instance, pkey, pvalue)
+                    setattr(new_instance, '_scake_waiting_fields', waiting_fields)
                     parsed_dict = new_instance
                 else:
                     print('** Component not found @', value)
@@ -95,7 +131,7 @@ class AutoScake():
     
     def __init_instance(self, class_str, param_dict):
         # loop up in "CLASSES_DICT"
-        obj_class = ScakeSetup.CLASSES_DICT[class_str]        
+        obj_class = Scake.CLASSES_DICT[class_str]        
         init_params = param_dict
         
         major, minor, micro, _, _ = sys.version_info
@@ -130,5 +166,5 @@ class AutoScake():
 
         return obj
         
-    def get():
-        return self.obj
+    #def get():
+    #    return self.obj
