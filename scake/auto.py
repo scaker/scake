@@ -3,9 +3,9 @@ import os
 import sys
 import inspect
 import yaml
-from scake.scake import Scake
-from scake.structure import ScakeDict
 from pprint import pprint
+from .scake import Scake
+from .structure import ScakeDict
 
 class AutoScake():
     def __init__(self, exec_graph, node_path=['scake'], root=None):
@@ -85,7 +85,7 @@ class AutoScake():
         parsed_dict = ScakeDict()
         for key, value in exec_graph.items():
             if isinstance(value, dict):
-                updated_node_path = self.node_path.copy()
+                updated_node_path = self.node_path[:] # copy list
                 updated_node_path.append(key)
                 comp = self.__get_scake_component(component_str='.'.join(updated_node_path), root=self.root)
                 if comp and comp.is_done_init and not isinstance(comp, dict) and not isinstance(comp, ScakeDict):
