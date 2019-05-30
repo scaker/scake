@@ -11,7 +11,7 @@ A flexible framework for Python
     </tr>
     <tr>
         <td>Version</td>
-        <td><img src='https://img.shields.io/pypi/v/scake.svg'></td>        
+        <td><img src='https://img.shields.io/pypi/v/scake.svg'></td>  
         <td>Coverage</td>
         <td>Master: <img src='https://codecov.io/gh/kyzas/scake/branch/master/graph/badge.svg'><br/>
         Staging: <img src='https://codecov.io/gh/kyzas/scake/branch/staging/graph/badge.svg'></td>
@@ -39,5 +39,13 @@ A flexible framework for Python
 Unit Test
 
 ```
-PYTHONPATH=. pytest
+pytest
+```
+
+Pre-commit
+
+```
+pip install pre-commit
+pre-commit install
+pre-commit run -a
 ```
