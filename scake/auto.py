@@ -5,6 +5,7 @@ import inspect
 import yaml
 from scake.scake import Scake
 from scake.structure import ScakeDict
+from pprint import pprint
 
 class AutoScake():
     def __init__(self, exec_graph, node_path=['scake'], root=None):
@@ -34,7 +35,16 @@ class AutoScake():
         pass
     
     def run(self):
-        self.__run_recursive(self.__dict__)
+        last_length_wait_dict = len(self.wait_dict)
+        while True:
+            self.__run_recursive(self.__dict__)
+            if len(self.wait_dict) == 0:
+                break
+                
+            self.__check_wait_dict_and_reinit()
+            if len(self.wait_dict) == last_length_wait_dict:
+                break
+            last_length_wait_dict = len(self.wait_dict)
         pass
     
     def __run_recursive(self, root):
@@ -43,11 +53,11 @@ class AutoScake():
                 continue
             if isinstance(value, dict):
                 self.__run_recursive(value)
-            elif '__call__' in dir(value):
+            elif '__call__' in dir(value) and not hasattr(value, '_scake_run'):
                 result = value()
-                print('value.__dict__', value.__dict__)
                 for wfield in getattr(value, '_scake_waiting_fields'):
                     setattr(value, wfield, result)
+                setattr(value, '_scake_run', 1)
         pass
     
     def __check_wait_dict_and_reinit(self):        
@@ -77,31 +87,36 @@ class AutoScake():
             if isinstance(value, dict):
                 updated_node_path = self.node_path.copy()
                 updated_node_path.append(key)
-                auto = AutoScake(exec_graph=value, 
-                                 node_path=updated_node_path, 
-                                 root=self.root)
-                setattr(self, key, auto.obj)
-                parsed_dict[key] = auto.obj
+                comp = self.__get_scake_component(component_str='.'.join(updated_node_path), root=self.root)
+                if comp and comp.is_done_init and not isinstance(comp, dict) and not isinstance(comp, ScakeDict):
+                    #print('*', '.'.join(updated_node_path))
+                    #pprint(vars(comp))
+                    parsed_dict[key] = comp
+                else:
+                    auto = AutoScake(exec_graph=value, 
+                                     node_path=updated_node_path, 
+                                     root=self.root)
+                    setattr(self, key, auto.obj)
+                    parsed_dict[key] = auto.obj
             else:
                 if isinstance(value, str) and value.startswith('scake'):
                     if value.count('.') == 0:
                         raise Exception('Invalid reference to scake component: %s' % value)
                     component = self.__get_scake_component(component_str=value, root=self.root)
-                    if component:
+                    if component and (not isinstance(component, str) or component not in ['()', '__call__', '__call__()']):
                         setattr(self, key, component)
                         parsed_dict[key] = component
                         self.root.wait_dict.pop(value, None)
                     else:
-                        print('Component not found @', value)
+                        #print('Component not found @', value)
                         self.is_done_init = False
                         self.root.wait_dict[value] = '.'.join(self.node_path)
-                        print('self.root.wait_dict', self.root.wait_dict)
+                        #print('self.root.wait_dict', self.root.wait_dict)
                         pass
                     pass
                 else:
                     setattr(self, key, value)
                     parsed_dict[key] = value
-                    print('parsed_dict', parsed_dict)
             pass
             
         for key, value in exec_graph.items():
@@ -112,18 +127,19 @@ class AutoScake():
                     waiting_fields = []
                     # copy all parsed_dict to the new instance
                     for pkey, pvalue in parsed_dict.items():
-                        print('key value:', key, value)
                         if pvalue is None or pvalue in ['()', '__call__', '__call__()']: # this variable will handle the result of __call__() method
                             waiting_fields.append(pkey)
                         else:
                             setattr(new_instance, pkey, pvalue)
                     setattr(new_instance, '_scake_waiting_fields', waiting_fields)
                     parsed_dict = new_instance
+                    #print('* new instance:', self.node_path)
+                    #pprint(vars(new_instance))
                 else:
-                    print('** Component not found @', value)
+                    #print('** Component not found @', value)
                     self.is_done_init = False
                     ##self.root.wait_dict[value] = '.'.join(node_path)
-                    print('self.root.wait_dict', self.root.wait_dict)
+                    #print('self.root.wait_dict', self.root.wait_dict)
                     pass
                 break            
             pass
