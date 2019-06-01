@@ -8,6 +8,7 @@ CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 YAML_DIR = 'sample_yaml'
 SIMPLE_FLOW = 'simple_flow.yaml'
 FLEXIBLE_FLOW = 'flexible_flow.yaml'
+COMPLEX_FLOW = 'complex_flow.yaml'
 
 
 class MyMain():
@@ -28,8 +29,58 @@ class MyAnswer():
         return self.question.lower()
 
 
+class MySum():
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+
+    def __call__(self):
+        return self.a + self.b
+
+
+class MyProd():
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+
+    def __call__(self):
+        return self.a * self.b
+
+
+class MyPow():
+    def __init__(self, a, x):
+        self.a = a
+        self.x = x
+
+    def __call__(self):
+        return pow(self.a, self.x)
+
+
+class TotalSum():
+    def __init__(self, v_dict):
+        self.v_dict = v_dict
+
+    def __call__(self):
+        return sum(list(self.v_dict.values()))
+
+
 # set up scake
 Scake.app(classes=globals())
+
+
+def test_calling_with_complex_flow():
+    complex_settings = os.path.join(CURRENT_PATH, YAML_DIR, COMPLEX_FLOW)
+    auto = AutoScake(complex_settings)
+    auto.run()
+
+    assert auto.phase_1.sum_1.out == 3
+    assert auto.phase_1.prod_1.out == 15
+    assert auto.phase_1.pow_1.out == 225
+    assert auto.phase_1.prod_2.out == 45
+    assert auto.phase_2.sum.out == 60
+    assert auto.phase_2.neg.out == -60
+    assert auto.phase_2.sub.out == 165
+    assert auto.final_result.out == 453
 
 
 def test_calling_with_simple_constraint():

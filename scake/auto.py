@@ -3,7 +3,6 @@ import os
 import sys
 import inspect
 import yaml
-# from pprint import pprint
 from .scake import Scake
 from .structure import ScakeDict
 
@@ -38,13 +37,20 @@ class AutoScake():
 
     def run(self):
         last_length_wait_dict = len(self.wait_dict)
+        # num_retry = 0
+        # print('Wait Dict while running...')
         while True:
+            # print('run() > wait_dict', self.wait_dict)
+            # print('---')
             self.__run_recursive(self.__dict__)
             if len(self.wait_dict) == 0:
                 break
 
             self.__check_wait_dict_and_reinit()
+
             if len(self.wait_dict) == last_length_wait_dict:
+                print('Break due to length of wait_dict has not been changed: len(self.wait_dict) =',
+                      len(self.wait_dict))
                 break
             last_length_wait_dict = len(self.wait_dict)
         pass
@@ -92,14 +98,14 @@ class AutoScake():
                 updated_node_path.append(key)
                 comp = self.__get_scake_component(
                     component_str='.'.join(updated_node_path), root=self.root)
-                if comp and comp.is_done_init and not isinstance(comp, dict) and not isinstance(comp, ScakeDict):
-                    # print('*', '.'.join(updated_node_path))
-                    # pprint(vars(comp))
+                if comp and comp.is_done_init and (not isinstance(comp, dict)) and (not isinstance(comp, ScakeDict)):
                     parsed_dict[key] = comp
                 else:
                     auto = AutoScake(exec_graph=value,
                                      node_path=updated_node_path,
                                      root=self.root)
+                    if not auto.is_done_init:
+                        self.is_done_init = False
                     setattr(self, key, auto.obj)
                     parsed_dict[key] = auto.obj
             else:
@@ -109,8 +115,8 @@ class AutoScake():
                             'Invalid reference to scake component: %s' % value)
                     component = self.__get_scake_component(
                         component_str=value, root=self.root)
-                    not_call_annotation = not isinstance(component, str) or component not in [
-                        '()', '__call__', '__call__()']
+                    not_call_annotation = (not isinstance(component, str)) or (component not in [
+                        '()', '__call__', '__call__()'])
                     if component and not_call_annotation:
                         setattr(self, key, component)
                         parsed_dict[key] = component
@@ -131,6 +137,7 @@ class AutoScake():
             if key in Scake.CLASSES_DICT.keys():
                 auto = getattr(self, key)
                 if auto.is_done_init:
+                    # print('key', key, 'param', auto)
                     new_instance = self.__init_instance(
                         class_str=key, param_dict=auto)  # override self.obj
                     waiting_fields = []

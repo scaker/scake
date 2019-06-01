@@ -17,7 +17,7 @@ repos:
     hooks:
     -   id: tests
         name: run tests
-        entry: pytest -v
+        entry: pytest ./tests/
         language: system
+        files: '^tests/'
         types: [python]
-        stages: [push]

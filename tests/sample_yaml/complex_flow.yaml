@@ -1,0 +1,69 @@
+package:
+    author:
+        name: 'Scake'
+        email: 'minhng.cs@gmail.com'
+    name: 'Scake flow test'
+    description: 'Complex flow test'
+
+input:
+    a: 1
+    b: 2
+    c: 3
+    d: 4
+    e: 5
+
+phase_1:
+    sum_1:
+        out: () # 3
+        MySum:
+            a: scake.input.a # 1
+            b: scake.input.b # 2
+
+    prod_1:
+        out: () # 15
+        MyProd:
+            a: scake.phase_1.sum_1.out # 3
+            b: scake.input.e # 5
+
+    pow_1:
+        out: () # 225
+        MyPow:
+            a: scake.phase_1.prod_1.out # 15
+            x: scake.input.b # 2
+
+    prod_2: # 45
+        out: ()
+        MyProd:
+            a: scake.phase_1.pow_1.out # 225
+            b: 0.2
+
+phase_2:
+    sum:
+        out: () # 60
+        MySum:
+            a: scake.phase_1.prod_1.out # 15
+            b: scake.phase_1.prod_2.out # 45
+
+    neg:
+        out: () # -60
+        MyProd:
+            a: scake.phase_2.sum.out # 60
+            b: -1
+
+    sub:
+        out: () # 165
+        MySum:
+            a: scake.phase_1.pow_1.out # 225
+            b: scake.phase_2.neg.out   # -60
+
+final_result:
+    out: () # 453
+    TotalSum:
+        v_dict:
+            v1: scake.phase_1.sum_1.out # 3
+            v2: scake.phase_1.prod_1.out # 15
+            v3: scake.phase_1.pow_1.out # 225
+            v4: scake.phase_1.prod_2.out # 45
+            v5: scake.phase_2.sum.out # 60
+            v6: scake.phase_2.neg.out # -60
+            v7: scake.phase_2.sub.out # 165
