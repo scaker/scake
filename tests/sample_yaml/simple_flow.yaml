@@ -1,0 +1,14 @@
+package:
+    author:
+        name: 'Scake'
+        email: 'minhng.cs@gmail.com'
+    name: 'Scake flow test'
+    description: 'Simple logic test'
+
+data:
+    hello: "Hello Scake!" # do not change content of this message, it'll affect some test cases.
+
+entry:
+    out: ()
+    MyMain:
+        text: scake.data.hello
