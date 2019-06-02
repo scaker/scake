@@ -34,18 +34,30 @@ A flexible framework for Python
     </tr>
 </table>
 
-# note
+# RELEASED FEATURES
 
-Unit Test
+## v0.1.0
 
-```
-pytest
-```
+* Automatically initialize Class instances from YAML description.
+* Code flow is built and executed properly by checking attribute dependencies.
+* Generate class templates based on YAML description.
 
-Pre-commit
+# CONTRIBUTING
+
+Step 1. Fork on **staging** branch.
+Step 2. Install **pre-commit** on the local dev environment.
 
 ```
 pip install pre-commit
 pre-commit install
+```
+
+Step 3. Write test case(s) for the new feature or the bug.
+Step 4. Write code to pass the tests.
+Step 5. Make sure that the new code passes all the pre-commmit conditions.
+
+```
 pre-commit run -a
 ```
+
+Step 6. Create pull request.
