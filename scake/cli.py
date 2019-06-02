@@ -67,12 +67,14 @@ def create_empty_default_files(parent_dir, default_files):
     pass
 
 
-def main(argv_list):
+def main(argv_list=None):
+    argv_list = argv_list if argv_list else sys.argv
     scake_command, exec_yaml = argv_list[1:]
 
     cwd = os.getcwd()
     scake_packages = os.path.join(cwd, Scake.GENERATED_SCAKE_PACKAGES_NAME)
-    os.makedirs(scake_packages, exist_ok=True)
+    if not os.path.isdir(scake_packages):
+        os.makedirs(scake_packages)
 
     default_files = [
         '__init__.py'
