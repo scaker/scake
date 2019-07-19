@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import inspect
+# import importlib
 
 from .graph import NodeGraph
 from .rule import Rule
@@ -179,42 +180,63 @@ class Scake():
         return flat_dict
 
     def __init_instance(self, class_mapping, class_str, param_dict):
-        # loop up in "CLASSES_DICT"
+        # -- initialize class object --
+        # loop up in "class_mapping"
+        if class_str not in class_mapping and class_str.count('.') > 0:
+            base_package = class_str.split('.')[0]
+
+            if base_package not in class_mapping:
+                globals()[base_package] = __import__(base_package)
+                self._class_mapping.update(globals())
+            print('class_str', class_str)
+            class_pointer = eval(class_str)
+            self._class_mapping[class_str] = class_pointer
+            class_mapping = self._class_mapping
+
         obj_class = class_mapping[class_str]
+        # -----------------------------
+
         init_params = param_dict
 
-        major, minor, micro, _, _ = sys.version_info
-        if major == 2:
-            # ArgSpec(args=['self', 'a', 'b', 'c'], varargs=None, keywords=None, defaults=(10, ''))
-            names, varargs, keywords, defaults = inspect.getargspec(
-                obj_class.__init__)
+        if isinstance(init_params, dict):
+            # -- initialize for dictionary of parameters --
+            major, minor, micro, _, _ = sys.version_info
+            if major == 2:
+                # ArgSpec(args=['self', 'a', 'b', 'c'], varargs=None, keywords=None, defaults=(10, ''))
+                names, varargs, keywords, defaults = inspect.getargspec(
+                    obj_class.__init__)
+            else:
+                names, varargs, keywords, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(
+                    obj_class.__init__)  # https://docs.python.org/3.4/library/inspect.html#inspect.getfullargspec
+            names = names[1:]
+            defaults = [] if not defaults else defaults
+            if len(names) > len(defaults):
+                # check required params
+                num_required_names = len(names) - len(defaults)
+                required_names = names[:num_required_names]
+                for rn in required_names:
+                    if rn not in init_params:
+                        raise Exception(
+                            'Missing required param "%s" of %s' % (rn, class_str))
+
+            # check for redundant keys in "init_params"
+            redundant_params = {}
+            redundant_keys = []
+            for key in init_params.keys():
+                if key not in names:
+                    redundant_keys.append(key)
+
+            for key in redundant_keys:
+                redundant_params[key] = init_params.pop(key)
+
+            obj = obj_class(**init_params)
+
+            for k, v in redundant_params.items():
+                setattr(obj, k, v)
+            pass
+        elif isinstance(init_params, list):
+            obj = obj_class(*init_params)
         else:
-            names, varargs, keywords, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(
-                obj_class.__init__)  # https://docs.python.org/3.4/library/inspect.html#inspect.getfullargspec
-        names = names[1:]
-        defaults = [] if not defaults else defaults
-        if len(names) > len(defaults):
-            # check required params
-            num_required_names = len(names) - len(defaults)
-            required_names = names[:num_required_names]
-            for rn in required_names:
-                if rn not in init_params:
-                    raise Exception(
-                        'Missing required param "%s" of %s' % (rn, class_str))
-
-        # check for redundant keys in "init_params"
-        redundant_params = {}
-        redundant_keys = []
-        for key in init_params.keys():
-            if key not in names:
-                redundant_keys.append(key)
-
-        for key in redundant_keys:
-            redundant_params[key] = init_params.pop(key)
-
-        obj = obj_class(**init_params)
-
-        for k, v in redundant_params.items():
-            setattr(obj, k, v)
+            raise Exception('Class parameters type is not supported!')
 
         return obj

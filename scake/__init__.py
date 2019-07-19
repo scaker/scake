@@ -2,4 +2,4 @@
 
 __version__ = "0.1.1"
 
-from .scake import Rule, Scake
+from .scake import Scake

@@ -18,6 +18,18 @@ class Person():
         return self.say
 
 
+def test_scake_with_lib():
+    config = {
+        'lib_obj': {
+            '$pathlib.Path': ['.']
+        }
+    }
+
+    s = Scake(config, class_mapping=globals())
+    s.run()
+    assert True
+
+
 def test_flow():
     config = {
         'settings': {
