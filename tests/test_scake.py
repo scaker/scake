@@ -49,7 +49,7 @@ def test_simple_loop():
 def test_scake_with_lib():
     config = {
         'lib_obj': {
-            '$pathlib.Path': ['.']
+            '$zipfile.ZipFile': ['test_scake.py', 'w']
         }
     }
 
