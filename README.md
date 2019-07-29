@@ -34,7 +34,75 @@ A flexible framework for Python
     </tr>
 </table>
 
+# USAGE
+
+## Hello World with Scake
+
+First, let's define the settings in YAML format.
+
+**settings.yaml**
+
+``` yaml
+my_settings:
+    hello_message: "Hello World!"
+
+printer:
+    $MyPrinter:
+        message: =/my_settings/hello_message
+    result(): __call__
+```
+
+In the above settings, we define the "hello_message" component holding our message: "Hello World!". The reference to it is "=/my_settings/hello_message" (very similar to file path system), first character "=" is annotation for component reference.
+
+At the "printer" component, we initialize an instance of class "MyPrinter" (annotated by $MyPrinter) and pass the message content to its constructor. After initializing instance successfully, Scake will execute the "__call__" function and assign the result to component at "/printer/result()". Open and close parenthesis annotates a method component in Scake.
+
+**hello.py**
+
+``` python
+# -*- coding: utf-8 -*-
+import sys
+import yaml
+from scake import Scake
+
+class MyPrinter:
+    def __init__(self, message):
+        self.message = message
+
+    def __call__(self):
+        print(self.message)
+
+def main(yaml_path):
+    with open(yaml_path) as f:
+        config = yaml.safe_load(f)
+    s = Scake(config, class_mapping=globals())
+    s.run()
+    pass
+
+if __name__ == "__main__":
+    main(yaml_path="settings.yaml")
+```
+
+Run the following command for your first "Hello World!":
+
+``` bash
+$ python3 hello.py
+Hello World!
+```
+
+# FEATURES TO-DO
+
+- [ ] Support loop
+- [ ] Support flow reference
+- [ ] Support integration tests
+- [ ] Support generating class templates
+- [ ] Import custom packages automatically
+
 # RELEASED FEATURES
+
+## v0.2.0
+
+* Big refactoring in how we do initializing instances and executing code flow
+* Remove generating class templates based on YAML
 
 ## v0.1.0
 

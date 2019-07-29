@@ -188,7 +188,6 @@ class Scake():
             if base_package not in class_mapping:
                 globals()[base_package] = __import__(base_package)
                 self._class_mapping.update(globals())
-            print('class_str', class_str)
             class_pointer = eval(class_str)
             self._class_mapping[class_str] = class_pointer
             class_mapping = self._class_mapping
