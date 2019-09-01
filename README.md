@@ -91,11 +91,23 @@ Hello World!
 
 # FEATURES TO-DO
 
-- [ ] Support loop
-- [ ] Support flow reference
-- [ ] Support integration tests
-- [ ] Support generating class templates
-- [ ] Import custom packages automatically
+- [ ] Design logo for Scake.
+- [ ] Write documentation & tutorials for Scake.
+- [ ] Support "requirements.txt" in settings. Installing Python packages on-the-fly.
+- [ ] Support loop in settings.
+- [ ] Support flow reference (connect multiple settings files together).
+- [ ] Support integration tests (try as friendly as possible).
+- [ ] Support generating class templates (> scake /path/to/settings.yaml).
+- [ ] Import custom packages automatically by defining in the settings file.
+- [ ] Setting element inherit / override.
+
+Far future plan:
+
+- [ ] Packaging scake with Cython.
+- [ ] Packaging scake to a library or executable binary.
+- [ ] Scake server for listening file changes and update code flow status (ok or error) in real-time.
+- [ ] Scake component on the cloud. Be able to reference a scake component by URL @ specific version.
+- [ ] Interactive IDE for designing a settings fully compatible to Scake.
 
 # RELEASED FEATURES
 
