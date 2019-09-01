@@ -111,6 +111,11 @@ Far future plan:
 
 # RELEASED FEATURES
 
+## v0.2.1
+
+* Object attribute reference in YAML settings
+* Fix bug: similar keys in settings
+
 ## v0.2.0
 
 * Big refactoring in how we do initializing instances and executing code flow
