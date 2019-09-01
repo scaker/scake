@@ -19,9 +19,17 @@ class Scake():
         pass
 
     def _get_recursive_value(self, value):
-        ref_key = self._rule.is_ref(value)
+        ref_key = self._rule.is_ref(value, is_remove_attr=False)
         if ref_key:
-            return self[ref_key]
+            num_dots = ref_key.split(self._rule.separator)[-1].count('.')
+            if num_dots > 0:
+                attrs = ref_key.split(self._rule.separator)[-1].split('.')[1:]
+                ref_obj = self[self._rule.is_ref(value, is_remove_attr=True)]
+                for attr in attrs:
+                    ref_obj = getattr(ref_obj, attr)
+                return ref_obj
+            else:
+                return self[ref_key]
         elif isinstance(value, dict):
             new_item = {}
             for k, v in value.items():
@@ -63,9 +71,7 @@ class Scake():
         }
 
     def exec_nodes(self):
-        #         print('len(self._runtime_nodes_order)', len(self._runtime_nodes_order))
         node_zero_degree = [n for n in self._runtime_nodes_order if n.degree == 0]
-#         print('len(self.node_zero_degree)', len(node_zero_degree))
         for node in node_zero_degree:
             if self._rule.is_method(node.id):
                 # execute method
@@ -110,12 +116,19 @@ class Scake():
             pass
         pass
 
-    def run(self):
+    def run(self, debug=False):
         self._runtime_nodes_order = self._node_graph.get_node_order()
         while len(self._runtime_nodes_order) > 0:
+
+            if debug:
+                print(self._node_graph)
+
             self.exec_nodes()
 #             break
             self._runtime_nodes_order = self._node_graph.get_node_order()
+
+        if debug:
+            print(self._node_graph)
         pass
 
     def _filter_keys(self, condition):
@@ -130,7 +143,7 @@ class Scake():
         deps = []
         for k in key_list:
             v = self._flat_dict[k]
-            ref_key = self._rule.is_ref(v)
+            ref_key = self._rule.is_ref(v, is_remove_attr=True)
             deps.append(ref_key) if ref_key else None
             pass
         return deps

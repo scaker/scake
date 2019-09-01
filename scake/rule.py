@@ -33,13 +33,14 @@ class Rule():
             return None
         pass
 
-    def is_ref(self, ref):
-        """
-        If rule of this method is overriden, please override "ref2key" method too.
-        """
+    def is_ref(self, ref, is_remove_attr=False):
         if isinstance(ref, str) and \
                 ref.startswith(self.path_symbol) and \
                 ref.count(self.separator) > 0:
+            if is_remove_attr and ref.split(self.separator)[-1].count('.') > 0:
+                new_ref = ref.split(self.separator)
+                new_ref[-1] = new_ref[-1].split('.')[0]
+                return self.separator.join(new_ref)[1:]
             return ref[1:]
         else:
             return None
