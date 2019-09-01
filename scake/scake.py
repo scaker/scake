@@ -90,8 +90,8 @@ class Scake():
 
                 node.resolve()
             else:
-                def child_nodes_filter(k): return k.startswith(node.id) and k != node.id and k.count(
-                    self._rule.separator)-node.id.count(self._rule.separator) == 1
+                def child_nodes_filter(k): return k.startswith(node.id+self._rule.separator) and k != node.id \
+                    and k.count(self._rule.separator)-node.id.count(self._rule.separator) == 1
                 sub_ids = self._filter_keys(condition=child_nodes_filter)
                 classname_list = [self._rule.is_class(id) for id in sub_ids]
                 num_classnames = sum([c is not None for c in classname_list])
