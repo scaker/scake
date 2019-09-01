@@ -2,62 +2,6 @@
 from scake import Scake
 
 
-class MyCondition():
-    def __init__(self, num_loop=0):
-        self.num_loop = num_loop
-
-    def is_loop(self):
-        result = self.num_loop > 0
-        self.num_loop -= 1
-        return result
-
-
-class MyValue():
-    def __init__(self, value):
-        self.value = value
-
-    def increase(self):
-        self.value += 1
-        return self.value
-
-
-"""
-def test_simple_loop():
-    config = {
-        'my_loop': {
-            '$MyCondition': {
-                'num_loop': 7,
-            },
-            'is_loop()': 'is_loop',
-        },
-        'loop_block': {
-            'my_value': {
-                '$MyValue': {
-                    'value': 10,
-                },
-                'increase()': 'increase',
-            },
-        },
-        'result': '=/loop_block/my_value/increase()'
-    }
-    s = Scake(config, class_mapping=globals())
-    s.run()
-    assert s['/result'] == 17
-"""
-
-
-def test_scake_with_lib():
-    config = {
-        'lib_obj': {
-            '$zipfile.ZipFile': ['test_scake.py', 'w']
-        }
-    }
-
-    s = Scake(config, class_mapping=globals())
-    s.run()
-    assert True
-
-
 class Person():
     def __init__(self, content):
         self.content = content
@@ -70,6 +14,36 @@ class Person():
     def say_what(self, content):
         self.say = content
         return self.say
+
+
+def test_similar_keys():
+    config = {
+        'person': {
+            '$Person': {
+                'content': 'en',
+            },
+        },
+        'person_1': {
+            '$Person': {
+                'content': 'fr',
+            },
+        },
+    }
+    s = Scake(config, class_mapping=globals())
+    s.run(debug=True)
+    assert True
+
+
+def test_scake_with_lib():
+    config = {
+        'lib_obj': {
+            '$zipfile.ZipFile': ['test_scake.py', 'w']
+        }
+    }
+
+    s = Scake(config, class_mapping=globals())
+    s.run()
+    assert True
 
 
 def test_flow():
