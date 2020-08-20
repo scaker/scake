@@ -12,14 +12,14 @@ class Node():
         if self.id == id:
             raise Exception('Graph cycle detected @ %s' % id)
         self.ancestor.append(id)
-        self.ancestor = list(set(self.ancestor))
+        self.ancestor = list(set(self.ancestor)) # unique
         pass
 
     def add_descendant(self, id):
         if self.id == id:
             raise Exception('Graph cycle detected @ %s' % id)
         self.descendant.append(id)
-        self.descendant = list(set(self.descendant))
+        self.descendant = list(set(self.descendant)) # unique
         self.degree = len(self.descendant)
         self.node_graph[id]._add_ancestor(self.id)
         pass
