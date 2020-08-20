@@ -177,7 +177,7 @@ class Scake():
             elif self._rule.is_method(id):
                 node_graph.add_node(id=id, des_paths=[self._parent(id)])
 
-            self._recursively_trace(node_graph=node_graph, start_node_id=id, child_ids=deps, traversed_ids=[id]+deps)
+            self._recursively_trace(node_graph=node_graph, start_node_id=id, child_ids=deps, traversed_ids=[id])
                 
         return node_graph
 
@@ -189,14 +189,14 @@ class Scake():
         # print("=> start_node_id: %s | child_ids: %s | traversed_ids: %s" % (start_node_id, child_ids, traversed_ids))
         for cid in child_ids:
             deps = self._extract_dependencies(self._filter_keys(condition=lambda k: k.startswith(cid)))
+            local_traversed_ids = list(traversed_ids) + [cid]
             # detect cycle
             for dep_id in deps:
-                if dep_id in traversed_ids:
+                if dep_id in local_traversed_ids:
                     raise Exception('Graph cycle detected @ %s -> %s | traversed: %s' % (cid, dep_id, str(traversed_ids)))
             node_graph.add_node(id=cid, des_paths=deps)
-            traversed_ids += deps
-            traversed_ids = list(set(traversed_ids)) #unique
-            self._recursively_trace(node_graph=node_graph, start_node_id=cid, child_ids=deps, traversed_ids=traversed_ids)
+            local_traversed_ids = list(set(local_traversed_ids)) #unique
+            self._recursively_trace(node_graph=node_graph, start_node_id=cid, child_ids=deps, traversed_ids=local_traversed_ids)
         pass
     
     def _merge_dicts(self, keep, target, prefix):
