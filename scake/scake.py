@@ -6,6 +6,8 @@ import inspect
 from .graph import NodeGraph
 from .rule import Rule
 
+import logging
+_logger = logging.getLogger(__name__)
 
 class Scake():
     def __init__(self, config, rule=None, class_mapping=None):
@@ -121,14 +123,14 @@ class Scake():
         while len(self._runtime_nodes_order) > 0:
 
             if debug:
-                print(self._node_graph)
+                _logger.info(self._node_graph)
 
             self.exec_nodes()
 #             break
             self._runtime_nodes_order = self._node_graph.get_node_order()
 
         if debug:
-            print(self._node_graph)
+            _logger.info(self._node_graph)
         pass
 
     def _filter_keys(self, condition):
@@ -143,9 +145,18 @@ class Scake():
         deps = []
         for k in key_list:
             v = self._flat_dict[k]
-            ref_key = self._rule.is_ref(v, is_remove_attr=True)
-            deps.append(ref_key) if ref_key else None
+            if isinstance(v, (list, tuple)):
+                ref_keys = []
+                for sub_v in v:
+                    rk = self._rule.is_ref(sub_v, is_remove_attr=True)
+                    if rk:
+                        ref_keys.append(rk)
+            else:
+                ref_keys = [self._rule.is_ref(v, is_remove_attr=True)]            
+            ref_keys = [rk for rk in ref_keys if rk is not None]
+            deps += ref_keys
             pass
+        deps = list(set(deps)) #unique
         return deps
 
     def _parent(self, key):
@@ -166,8 +177,28 @@ class Scake():
             elif self._rule.is_method(id):
                 node_graph.add_node(id=id, des_paths=[self._parent(id)])
 
+            self._recursively_trace(node_graph=node_graph, start_node_id=id, child_ids=deps, traversed_ids=[id]+deps)
+                
         return node_graph
 
+    # 200820
+    def _recursively_trace(self, node_graph, start_node_id, child_ids=[], traversed_ids=[]):
+        if not child_ids:
+            # break recursive traversing
+            return
+        # print("=> start_node_id: %s | child_ids: %s | traversed_ids: %s" % (start_node_id, child_ids, traversed_ids))
+        for cid in child_ids:
+            deps = self._extract_dependencies(self._filter_keys(condition=lambda k: k.startswith(cid)))
+            # detect cycle
+            for dep_id in deps:
+                if dep_id in traversed_ids:
+                    raise Exception('Graph cycle detected @ %s -> %s | traversed: %s' % (cid, dep_id, str(traversed_ids)))
+            node_graph.add_node(id=cid, des_paths=deps)
+            traversed_ids += deps
+            traversed_ids = list(set(traversed_ids)) #unique
+            self._recursively_trace(node_graph=node_graph, start_node_id=cid, child_ids=deps, traversed_ids=traversed_ids)
+        pass
+    
     def _merge_dicts(self, keep, target, prefix):
         for key, value in target.items():
             keep[self._rule.separator + prefix + key] = value
