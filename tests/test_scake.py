@@ -37,7 +37,7 @@ def test_similar_keys():
 def test_scake_with_lib():
     config = {
         'lib_obj': {
-            '$zipfile.ZipFile': ['test_scake.py', 'w']
+            '$datetime.date': [2020, 8, 20]
         }
     }
 
