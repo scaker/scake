@@ -7,8 +7,88 @@ class Foo():
 
     def __call__(self):
         return self.x
+
+class Wrapper():
+    def __init__(self, x):
+        assert not isinstance(x, (tuple, list))
+        self.x = x
+
+    def __call__(self):
+        return self.x
     
-def test_ref_list_2():
+def test_ref_list_4():
+    config = {
+        'transforms': {
+            't1': {
+                '$Foo': {
+                    'x': 5,
+                }
+            },
+            't2': {
+                '$Foo': {
+                    'x': 10,
+                }
+            },
+            't3': {
+                '$Foo': {
+                    'x': 17,
+                }
+            },
+            'offical_list': [
+                '=/wrapper',
+                '=/transforms/t3',
+            ]
+        },
+        'v0': {
+            'v1': {
+                'v2': [
+                    '=/transforms/t1',
+                    '=/transforms/t2',
+                ],
+            }
+        },
+        'seq_obj': {
+            '$Foo': {
+                'x': '=/v0/v1/v2',
+            }
+        },
+        'wrapper': {
+            '$Wrapper': {
+                'x': '=/seq_obj',
+            }
+        },
+        'compose': {
+            '$Foo': {
+                'x': '=/transforms/offical_list',
+            }
+        },
+        'aug': {
+            'train': {
+                'main': '=/compose',
+            }
+        },
+        'dataset': {
+            '$Foo': {
+                'x': '=/aug/train/main',
+            }
+        },
+        'dataloader': {
+            '$Foo': {
+                'x': '=/dataset',
+            }
+        }
+    }
+
+    s = Scake(config, class_mapping=globals())
+    s.run(debug=True)
+
+    compose = s['/compose']
+    offical_list = compose.x
+    wrapper = offical_list[0]
+    
+    assert isinstance(wrapper.x, Foo)
+    
+def test_ref_list_3():
     config = {
         'v0': {
             'v1': {

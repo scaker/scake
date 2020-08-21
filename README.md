@@ -111,6 +111,14 @@ Far future plan:
 
 # RELEASED FEATURES
 
+## v0.2.3
+
+* Fix bug: initialize object with multiple inheritance
+
+## v0.2.2
+
+* Fix bug: multi-level linking
+
 ## v0.2.1
 
 * Object attribute reference in YAML settings

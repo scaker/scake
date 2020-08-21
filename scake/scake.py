@@ -22,7 +22,7 @@ class Scake():
 
     def _get_recursive_value(self, value):
         ref_key = self._rule.is_ref(value, is_remove_attr=False)
-        if ref_key:
+        if value.__class__.__name__ == "str" and isinstance(value, str) and ref_key:
             num_dots = ref_key.split(self._rule.separator)[-1].count('.')
             if num_dots > 0:
                 attrs = ref_key.split(self._rule.separator)[-1].split('.')[1:]
@@ -32,12 +32,12 @@ class Scake():
                 return ref_obj
             else:
                 return self[ref_key]
-        elif isinstance(value, dict):
+        elif value.__class__.__name__ == "dict" and isinstance(value, dict):
             new_item = {}
             for k, v in value.items():
                 new_item[k] = self._get_recursive_value(value=v)
             return new_item
-        elif isinstance(value, list):
+        elif value.__class__.__name__ == "list" and isinstance(value, list):
             new_item = []
             for v in value:
                 new_item.append(self._get_recursive_value(value=v))
@@ -108,6 +108,10 @@ class Scake():
                     classname = classname_list[cidx]
 
                     self[node.id] = self.__init_instance(self._class_mapping, classname, self[param_id])
+                    
+                    if self.debug:
+                        _logger.debug("Assigned key %s @ %s" % (node.id, str(self[node.id])))
+                    
                     node.resolve()
                     pass
                 elif num_classnames > 1:
@@ -119,6 +123,7 @@ class Scake():
         pass
 
     def run(self, debug=False):
+        self.debug = debug
         self._runtime_nodes_order = self._node_graph.get_node_order()
         while len(self._runtime_nodes_order) > 0:
 
@@ -186,7 +191,7 @@ class Scake():
         if not child_ids:
             # break recursive traversing
             return
-        # print("=> start_node_id: %s | child_ids: %s | traversed_ids: %s" % (start_node_id, child_ids, traversed_ids))
+        
         for cid in child_ids:
             deps = self._extract_dependencies(self._filter_keys(condition=lambda k: k.startswith(cid)))
             local_traversed_ids = list(traversed_ids) + [cid]
@@ -273,6 +278,9 @@ class Scake():
                 redundant_params[key] = init_params.pop(key)
 
             obj = obj_class(**init_params)
+            
+            if self.debug:
+                _logger.debug("Initialize object %s @ %s => %s" % (str(obj_class), str(init_params), str(obj)))
 
             for k, v in redundant_params.items():
                 setattr(obj, k, v)
