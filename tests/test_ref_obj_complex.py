@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 from scake import Scake
 
+
 class Foo():
     def __init__(self, x):
         self.x = x
 
     def __call__(self):
         return self.x
-    
+
+
 class Bar():
     def __init__(self, y):
         self.y = y
-    
+
+
 def test_ref_obj_complex_1():
     config = {
         'const': {
@@ -20,7 +23,7 @@ def test_ref_obj_complex_1():
         'transforms': {
             'resize': {
                 '$Foo': {
-                    'x': '=/const/size', # <= bug risk!!
+                    'x': '=/const/size',  # <= bug risk!!
                 }
             }
         },
@@ -72,4 +75,3 @@ def test_ref_obj_complex_1():
     transform_list = compose.y
     resize = transform_list[0]
     assert isinstance(resize, Foo)
-    

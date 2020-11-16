@@ -9,12 +9,14 @@ class Foo():
     def __call__(self):
         return self.x
 
+
 class Bar():
     def __init__(self, foo):
         self.foo = foo
-    
+
     def __call__(self):
         pass
+
 
 def test_ref_obj_3_level():
     config = {
@@ -39,7 +41,8 @@ def test_ref_obj_3_level():
     assert isinstance(s['/f2'], Bar)
     assert isinstance(s['/f2'].foo, Foo)
     assert isinstance(s['/f3'], Foo)
-    
+
+
 def test_ref_obj_2_level():
     config = {
         'foo': {
@@ -61,7 +64,8 @@ def test_ref_obj_2_level():
     assert isinstance(s['/f1'], Foo)
     assert isinstance(s['/f2'], Bar)
     assert isinstance(s['/f2'].foo, Foo)
-    
+
+
 def test_ref_obj_1_level():
     config = {
         'foo': {
@@ -76,4 +80,3 @@ def test_ref_obj_1_level():
     s.run(debug=True)
 
     assert isinstance(s['/fptr'], Foo)
-    

@@ -9,6 +9,7 @@ from .rule import Rule
 import logging
 _logger = logging.getLogger(__name__)
 
+
 class Scake():
     def __init__(self, config, rule=None, class_mapping=None):
         self._config = config
@@ -108,10 +109,10 @@ class Scake():
                     classname = classname_list[cidx]
 
                     self[node.id] = self.__init_instance(self._class_mapping, classname, self[param_id])
-                    
+
                     if self.debug:
                         _logger.debug("Assigned key %s @ %s" % (node.id, str(self[node.id])))
-                    
+
                     node.resolve()
                     pass
                 elif num_classnames > 1:
@@ -157,11 +158,11 @@ class Scake():
                     if rk:
                         ref_keys.append(rk)
             else:
-                ref_keys = [self._rule.is_ref(v, is_remove_attr=True)]            
-            ref_keys = [rk for rk in ref_keys if rk is not None]
+                ref_keys = [self._rule.is_ref(v, is_remove_attr=True)]
+            ref_keys = [ref_k for ref_k in ref_keys if ref_k is not None]
             deps += ref_keys
             pass
-        deps = list(set(deps)) #unique
+        deps = list(set(deps))  # unique
         return deps
 
     def _parent(self, key):
@@ -183,7 +184,7 @@ class Scake():
                 node_graph.add_node(id=id, des_paths=[self._parent(id)])
 
             self._recursively_trace(node_graph=node_graph, start_node_id=id, child_ids=deps, traversed_ids=[id])
-                
+
         return node_graph
 
     # 200820
@@ -191,19 +192,21 @@ class Scake():
         if not child_ids:
             # break recursive traversing
             return
-        
+
         for cid in child_ids:
             deps = self._extract_dependencies(self._filter_keys(condition=lambda k: k.startswith(cid)))
             local_traversed_ids = list(traversed_ids) + [cid]
             # detect cycle
             for dep_id in deps:
                 if dep_id in local_traversed_ids:
-                    raise Exception('Graph cycle detected @ %s -> %s | traversed: %s' % (cid, dep_id, str(traversed_ids)))
+                    raise Exception('Graph cycle detected @ %s -> %s | traversed: %s' %
+                                    (cid, dep_id, str(traversed_ids)))
             node_graph.add_node(id=cid, des_paths=deps)
-            local_traversed_ids = list(set(local_traversed_ids)) #unique
-            self._recursively_trace(node_graph=node_graph, start_node_id=cid, child_ids=deps, traversed_ids=local_traversed_ids)
+            local_traversed_ids = list(set(local_traversed_ids))  # unique
+            self._recursively_trace(node_graph=node_graph, start_node_id=cid,
+                                    child_ids=deps, traversed_ids=local_traversed_ids)
         pass
-    
+
     def _merge_dicts(self, keep, target, prefix):
         for key, value in target.items():
             keep[self._rule.separator + prefix + key] = value
@@ -278,7 +281,7 @@ class Scake():
                 redundant_params[key] = init_params.pop(key)
 
             obj = obj_class(**init_params)
-            
+
             if self.debug:
                 _logger.debug("Initialize object %s @ %s => %s" % (str(obj_class), str(init_params), str(obj)))
 

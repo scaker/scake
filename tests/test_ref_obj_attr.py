@@ -12,13 +12,15 @@ class Foo():
 
     def get_value(self):
         return self.in_value + self.out_value
-    
+
+
 class Bar():
     def __init__(self, foo_ptr):
         self.foo_ptr = foo_ptr
-        
+
     def __call__(self, x):
         return self.foo_ptr() + x
+
 
 def test_ref_obj_method():
     config = {
@@ -44,7 +46,8 @@ def test_ref_obj_method():
     s.run(debug=True)
 
     assert s['/bar_obj/out()'] == 15
-    
+
+
 def test_ref_obj_attr():
     config = {
         'foo_obj': {

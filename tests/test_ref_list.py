@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 from scake import Scake
 
+
 class Foo():
     def __init__(self, x):
         self.x = x
 
     def __call__(self):
         return self.x
+
 
 class Wrapper():
     def __init__(self, x):
@@ -15,7 +17,8 @@ class Wrapper():
 
     def __call__(self):
         return self.x
-    
+
+
 def test_ref_list_4():
     config = {
         'transforms': {
@@ -85,9 +88,10 @@ def test_ref_list_4():
     compose = s['/compose']
     offical_list = compose.x
     wrapper = offical_list[0]
-    
+
     assert isinstance(wrapper.x, Foo)
-    
+
+
 def test_ref_list_3():
     config = {
         'v0': {
@@ -111,7 +115,8 @@ def test_ref_list_3():
     s.run(debug=True)
 
     assert isinstance((s['/out'].x)[1], Foo)
-    
+
+
 def test_ref_list_2():
     config = {
         'v0': {
@@ -135,7 +140,8 @@ def test_ref_list_2():
     s.run(debug=True)
 
     assert isinstance(s['/out'][0], Foo)
-    
+
+
 def test_ref_list_1():
     config = {
         'v0': {
@@ -156,8 +162,8 @@ def test_ref_list_1():
 
     assert s['/foo'].x == [10, 20, 30]
     assert s['/out'].x == [10, 20, 30]
-    
-    
+
+
 def test_ref_list_obj():
     config = {
         'foo': {
@@ -174,7 +180,8 @@ def test_ref_list_obj():
 
     assert isinstance(s['/f0'][1], Foo)
     assert isinstance(s['/f1'][1], Foo)
-    
+
+
 def test_ref_list_simple():
     config = {
         'f0': [1, 2, 3],
@@ -185,4 +192,3 @@ def test_ref_list_simple():
     s.run(debug=True)
 
     assert s['/f1'] == [1, 2, 3]
-    
