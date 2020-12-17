@@ -45,3 +45,10 @@ class Rule():
         else:
             return None
         pass
+
+    def join(self, parent, *childs):
+        parent = parent.rstrip(self.separator)
+        new_path = parent
+        for c in childs:
+            new_path += self.separator + str(c)
+        return new_path

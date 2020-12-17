@@ -9,6 +9,7 @@ from .rule import Rule
 import logging
 _logger = logging.getLogger(__name__)
 
+
 class Scake():
     def __init__(self, config, rule=None, class_mapping=None):
         self._config = config
@@ -20,7 +21,7 @@ class Scake():
         self._runtime_nodes_order = []
         pass
 
-    def _get_recursive_value(self, value):
+    def _get_recursive_value(self, value, key):
         ref_key = self._rule.is_ref(value, is_remove_attr=False)
         if value.__class__.__name__ == "str" and isinstance(value, str) and ref_key:
             num_dots = ref_key.split(self._rule.separator)[-1].count('.')
@@ -35,20 +36,26 @@ class Scake():
         elif value.__class__.__name__ == "dict" and isinstance(value, dict):
             new_item = {}
             for k, v in value.items():
-                new_item[k] = self._get_recursive_value(value=v)
+                # new_item[k] = self._get_recursive_value(value=v)
+                # dec 17, 2020
+                new_item[k] = self[self._rule.join(key, k)]
             return new_item
         elif value.__class__.__name__ == "list" and isinstance(value, list):
             new_item = []
-            for v in value:
-                new_item.append(self._get_recursive_value(value=v))
+            for idx, v in enumerate(value):
+                new_item.append(self._get_recursive_value(value=v, key=self._rule.join(key, str(idx))))
             return new_item
         else:
             return value
         pass
 
     def __getitem__(self, key):
+        if key not in self._flat_dict:
+            _logger.warning(self._flat_dict)
         k = self._flat_dict[key]
-        v = self._get_recursive_value(value=k)
+        v = self._get_recursive_value(value=k, key=key)
+        # if k.__class__.__name__ == "str" and isinstance(k, str):
+        #    _logger.warning("key%s: value %s" % (k, v))
         return v
 
     def __setitem__(self, key, value):
@@ -108,10 +115,10 @@ class Scake():
                     classname = classname_list[cidx]
 
                     self[node.id] = self.__init_instance(self._class_mapping, classname, self[param_id])
-                    
+
                     if self.debug:
                         _logger.debug("Assigned key %s @ %s" % (node.id, str(self[node.id])))
-                    
+
                     node.resolve()
                     pass
                 elif num_classnames > 1:
@@ -128,7 +135,7 @@ class Scake():
         while len(self._runtime_nodes_order) > 0:
 
             if debug:
-                _logger.info(self._node_graph)
+                _logger.warning(self._node_graph)
 
             self.exec_nodes()
 #             break
@@ -151,22 +158,25 @@ class Scake():
         for k in key_list:
             v = self._flat_dict[k]
             if isinstance(v, (list, tuple)):
-                ref_keys = []
-                for sub_v in v:
-                    rk = self._rule.is_ref(sub_v, is_remove_attr=True)
-                    if rk:
-                        ref_keys.append(rk)
+                ref_keys = [self._rule.is_ref(sub_v, is_remove_attr=True) for sub_v in v]
+                # for sub_v in v:
+                #    rk = self._rule.is_ref(sub_v, is_remove_attr=True)
+                #    if rk:
+                #        ref_keys.append(rk)
             else:
-                ref_keys = [self._rule.is_ref(v, is_remove_attr=True)]            
+                ref_keys = [self._rule.is_ref(v, is_remove_attr=True)]
             ref_keys = [rk for rk in ref_keys if rk is not None]
             deps += ref_keys
             pass
-        deps = list(set(deps)) #unique
+        deps = list(set(deps))  # unique
         return deps
 
     def _parent(self, key):
-        key_parts = key.split(self._rule.separator)
-        return self._rule.separator.join(key_parts[:-1])
+        if key.count(self._rule.separator) >= 2:  # "=/parent/child"
+            key_parts = key.split(self._rule.separator)
+            return self._rule.separator.join(key_parts[:-1])
+        else:  # "=/value"
+            return None
 
     def _build_nodes(self, flat_dict):
         node_graph = NodeGraph(self)
@@ -176,14 +186,23 @@ class Scake():
             deps = self._extract_dependencies(des_ids)
             node_graph.add_node(id=id, des_paths=deps)
 
+            # _logger.warning("%s -> %s" % (id, str(deps)))
+
             # special cases: class, method
             if self._rule.is_class(id):
-                node_graph.add_node(id=self._parent(id), des_paths=[id])
+                # old code: node_graph.add_node(id=self._parent(id), des_paths=[id])
+                # fix bug @ test_ref_dict
+                c_id = id
+                p_id = self._parent(c_id)
+                while p_id:
+                    node_graph.add_node(id=p_id, des_paths=[c_id])
+                    c_id = p_id
+                    p_id = self._parent(c_id)
             elif self._rule.is_method(id):
                 node_graph.add_node(id=id, des_paths=[self._parent(id)])
 
             self._recursively_trace(node_graph=node_graph, start_node_id=id, child_ids=deps, traversed_ids=[id])
-                
+
         return node_graph
 
     # 200820
@@ -191,19 +210,21 @@ class Scake():
         if not child_ids:
             # break recursive traversing
             return
-        
+
         for cid in child_ids:
             deps = self._extract_dependencies(self._filter_keys(condition=lambda k: k.startswith(cid)))
             local_traversed_ids = list(traversed_ids) + [cid]
             # detect cycle
             for dep_id in deps:
                 if dep_id in local_traversed_ids:
-                    raise Exception('Graph cycle detected @ %s -> %s | traversed: %s' % (cid, dep_id, str(traversed_ids)))
+                    raise Exception('Graph cycle detected @ %s -> %s | traversed: %s' %
+                                    (cid, dep_id, str(traversed_ids)))
             node_graph.add_node(id=cid, des_paths=deps)
-            local_traversed_ids = list(set(local_traversed_ids)) #unique
-            self._recursively_trace(node_graph=node_graph, start_node_id=cid, child_ids=deps, traversed_ids=local_traversed_ids)
+            local_traversed_ids = list(set(local_traversed_ids))  # unique
+            self._recursively_trace(node_graph=node_graph, start_node_id=cid,
+                                    child_ids=deps, traversed_ids=local_traversed_ids)
         pass
-    
+
     def _merge_dicts(self, keep, target, prefix):
         for key, value in target.items():
             keep[self._rule.separator + prefix + key] = value
@@ -246,6 +267,9 @@ class Scake():
 
         init_params = param_dict
 
+        # debug
+        _logger.warning("%s -----> %s" % (class_str, str(init_params)))
+
         if isinstance(init_params, dict):
             # -- initialize for dictionary of parameters --
             major, minor, micro, _, _ = sys.version_info
@@ -278,7 +302,7 @@ class Scake():
                 redundant_params[key] = init_params.pop(key)
 
             obj = obj_class(**init_params)
-            
+
             if self.debug:
                 _logger.debug("Initialize object %s @ %s => %s" % (str(obj_class), str(init_params), str(obj)))
 
