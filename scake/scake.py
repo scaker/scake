@@ -38,7 +38,9 @@ class Scake():
             for k, v in value.items():
                 # new_item[k] = self._get_recursive_value(value=v)
                 # dec 17, 2020
-                new_item[k] = self[self._rule.join(key, k)]
+                item_path = self._rule.join(key, k)
+                new_item[k] = self[item_path] if item_path in self._flat_dict else self._get_recursive_value(
+                    value=v, key=item_path)
             return new_item
         elif value.__class__.__name__ == "list" and isinstance(value, list):
             new_item = []
@@ -50,8 +52,8 @@ class Scake():
         pass
 
     def __getitem__(self, key):
-        if key not in self._flat_dict:
-            _logger.warning(self._flat_dict)
+        # if key not in self._flat_dict:
+        #     _logger.warning(self._flat_dict)
         k = self._flat_dict[key]
         v = self._get_recursive_value(value=k, key=key)
         # if k.__class__.__name__ == "str" and isinstance(k, str):
