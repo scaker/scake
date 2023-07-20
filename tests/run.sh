@@ -1,0 +1,1 @@
+scake foo conf.yml
