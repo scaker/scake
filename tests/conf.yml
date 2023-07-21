@@ -8,28 +8,27 @@ config:
     bar:
         a: 5
         b: 2
-        c: =/config/bar/a
+        c: /config/bar/a
         d: 50
         e: 20
-        f: =/config/bar/e
+        f: /config/bar/e
 
 foo:
     bar:
-        $foo.bar.Bar: =/config/bar # (5, 2)
+        $foo.bar.Bar: /config/bar # (5, 2)
         mysum1(): # 50+20 = 70
             sum:
-                new_a: =/config/bar/d
-                new_b: =/config/bar/e
+                new_a: /config/bar/d
+                new_b: /config/bar/e
         mysum2(): __call__ # execute __call__ with no param => (5+2) + (5*2) -3 = 14
         mysum3():
             sum: # 50+20 = 70
-                new_a: =/config/bar/d
-                new_b: =/config/bar/e
-            _multi: True
+                new_a: /config/bar/d
+                new_b: /config/bar/e
 
 entry:
-    main(): foo.bar.__call__    # 14 (equal to foo.bar.mysum2)
-    main2():
-        foo.bar.__call__: # (5+2) + (5*2) +10 = 27
-            val: 10
-    main3: =/foo/bar/mysum3() # 70 (equal to foo.bar.mysum3())
+    # main(): foo.bar.__call__    # 14 (equal to foo.bar.mysum2)
+    # main2():
+    #     foo.bar.__call__: # (5+2) + (5*2) +10 = 27
+    #         val: 10
+    main3: /foo/bar/mysum3() # 70 (equal to foo.bar.mysum3())

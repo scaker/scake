@@ -6,7 +6,7 @@ class Bar():
     
     def sum(self, new_a=False, new_b=False):
         if new_a and new_b:
-            return self.new_a + self.new_b
+            return new_a + new_b
         else:
             return self.a + self.b
     

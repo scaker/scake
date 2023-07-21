@@ -26,7 +26,12 @@ from scake import Scake
 def test_scake2():
     # scake_flow = Scake(module_dir="/home/coder/project/GITHUB/scake/tests/foo", config="/home/coder/project/GITHUB/scake/tests/conf.yml", is_ray=False)
     scake_flow = Scake(config="/home/coder/project/GITHUB/scake/tests/conf.yml", is_ray=False)
-    scake_flow("=/foo")
+    # scake_flow("/foo")
+    sck_result = scake_flow()
+
+    print("sck_result", sck_result)
+    raise Exception("sck_result")
+
     assert False
 
 def main():
