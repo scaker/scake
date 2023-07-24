@@ -1,4 +1,4 @@
-from . import utils
+# -*- coding: utf-8 -*-
 from . import config_loader
 from . import sck_graph
 from . import sck_format
