@@ -88,6 +88,9 @@ def is_scake_method(name):
     return False
 
 def contains_scake_class(value):
+    if not is_dict(value):
+        return False
+        
     count = 0
     for k, v in value.items():
         if is_scake_class(k):

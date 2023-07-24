@@ -1,5 +1,29 @@
 from scake import Scake
 
+def test_init_class_from_lib():
+    scake_flow = Scake(config={
+        "a": {
+            "b": {
+                "$collections.OrderedDict": {},
+                "myset()": {
+                    "__setitem__": ["minh", 100]
+                },
+                "myget()": {
+                    "get": ["minh", 10]
+                }
+            }
+        },
+        "c": "/a/b/myget()",
+    })
+    mycol = scake_flow["/a/b"]
+    import collections
+    assert isinstance(mycol, collections.OrderedDict)
+    scake_flow()
+    assert mycol["minh"] == 100
+    assert scake_flow["/c"] == 100
+    assert scake_flow["/a"]["b"] == scake_flow["/a/b"] # verify the same object
+    pass
+
 def test_scake():
     # scake_flow = Scake(module_dir="/home/coder/project/GITHUB/scake/tests/foo", config="/home/coder/project/GITHUB/scake/tests/conf.yml", is_ray=False)
     scake_flow = Scake(config="/home/coder/project/GITHUB/scake/tests/conf.yml", is_ray=False)

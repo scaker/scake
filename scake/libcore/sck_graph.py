@@ -195,7 +195,10 @@ class SckGraph():
         """
         if config is None:
             config = self.config
-            
+        
+        if not sck_format.is_dict(config):
+            return
+
         for k, v in config.items():
             if k in ConfigLoader.RESERVED_KEYS:
                 continue
@@ -228,15 +231,14 @@ class SckGraph():
                         pass
                 pass
             else:   # v is primitive type            
-                # do not add connection
-                is_add_connection = False
-
                 if sck_format.is_scake_method(k):
                     # link method to its parent
                     self.add_edge(
                         sck_format.convert_list_to_sckref(parent_path+[k,]),
                         sck_format.convert_list_to_sckref(parent_path)
                     )
+                    # do not add connection
+                    is_add_connection = False
                 pass
             pass
 
@@ -263,9 +265,12 @@ class SckGraph():
 
         exec_layers = self.compute_exec_flow(node_names=keys)   # [["/config/bar/a", ...], ...]
 
+        logw("Exec layers for", keys, ".....", exec_layers)
+
         for layer in exec_layers:
             for node_name in layer:
                 node_resolved_value = self.resolve(key=node_name, default=default, live=live)
+                logi("Resolved", node_name, "=>", node_resolved_value)
 
         # extract result from graph_node
         graph_node = self.graph[GRAPH_NODE]
@@ -294,14 +299,20 @@ class SckGraph():
         final_result = None
         p_queue = [{"node": target, "result_description": {}},]
         while len(p_queue)>0:
+            logw("|=======p queue=======|", p_queue)
             n_item = len(p_queue)
             for idx in range(n_item):
                 p_item = p_queue[idx]
                 target = p_item["node"]
                 result_description = p_item["result_description"]
 
+                logd("->Check cache", "live mode", live, "target", target, "node info", graph_node.get(target, {}))
+
+                res_value = OmegaConf.select(self.config, sck_format.convert_sckref_to_query(target), default=None)
+
                 # check "resolved_value" of the node if any
-                if not live and GRAPH_NODE_RESOLVED_VALUE in graph_node.get(target, {}):
+                if not live and GRAPH_NODE_RESOLVED_VALUE in graph_node.get(target, {}) or \
+                    (sck_format.contains_scake_class(res_value) and GRAPH_NODE_RESOLVED_VALUE in graph_node.get(target, {})): # force using reference from initialized object, because the executive layers are resolved in order
                     res_value = graph_node[target][GRAPH_NODE_RESOLVED_VALUE]
                     if not result_description:
                         final_result = res_value # already the result we want. Eg. 1, 5 "x"
@@ -310,8 +321,7 @@ class SckGraph():
                         self._apply_result_description(result_description, res_value)
                         pass
                     continue
-                
-                res_value = OmegaConf.select(self.config, sck_format.convert_sckref_to_query(target), default=None)
+
                 if sck_format.is_scake_method(target):
                     """
                         mysum2(): __call__
@@ -321,6 +331,9 @@ class SckGraph():
                     """
                     # trigger function
                     parent_node = sck_format.get_parent_node(target)
+
+                    logd("....... key", key, "target", target, "parent_node", parent_node)
+
                     target_obj =  graph_node[parent_node][GRAPH_NODE_RESOLVED_VALUE]
 
                     if sck_format.is_dict(res_value):
@@ -340,10 +353,13 @@ class SckGraph():
                     pass
                 elif sck_format.is_dict(res_value):
                     init_result = {}
+
+                    is_instance_init = False
                     if sck_format.contains_scake_class(res_value):  # instantiate the object
                         class_str, _ = sck_format.extract_class_str_and_param_dict(res_value)
                         param_dict = graph_node[sck_format.SCK_REF_DELIMITER.join([target, class_str])][GRAPH_NODE_RESOLVED_VALUE]
                         init_result = self.__init_instance(class_str=class_str, param_dict=param_dict)
+                        is_instance_init = True
 
                     if not result_description:
                         final_result = init_result
@@ -352,7 +368,8 @@ class SckGraph():
                         res_dict = init_result
                         self._apply_result_description(result_description, res_dict) # assign empty dict to result
 
-                    if not isinstance(init_result, dict):
+                    if is_instance_init:
+                        # do nothing!
                         pass
                     else:
                         for k, v in res_value.items():
