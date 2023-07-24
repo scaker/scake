@@ -3,6 +3,22 @@
 # scake
 A flexible framework for Python
 
+# NOTE
+
+Scake version from v0.3.0 is not compatible to older version (v0.2.4-). Accepted annotation of Scake has the following format:
+
+```
+a:
+    b: 10
+c: /a/b         # 10
+
+instead of this in the older Scake version:
+
+a:
+    b: 10
+c: =/a/b         # 10
+```
+
 # USAGE
 
 Update later
