@@ -15,6 +15,23 @@ import pprint
 import sys, os
 
 import logging
+logging.addLevelName(
+    logging.INFO, "\x1b[1;34m%s\x1b[0m" % logging.getLevelName(logging.INFO)
+)
+logging.addLevelName(
+    logging.WARNING, "\x1b[1;33m%s\033[1;0m" % logging.getLevelName(logging.WARNING)
+)
+logging.addLevelName(
+    logging.ERROR, "\033[1;31m%s\033[1;0m" % logging.getLevelName(logging.ERROR)
+)
+# https://stackoverflow.com/a/23874319
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.DEBUG,
+    #format="%(asctime)s.%(msecs)03d %(levelname)s %(module)s@%(funcName)s: %(message)s",
+    format="%(asctime)s.%(msecs)03d %(levelname)s %(funcName)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 _logger = logging.getLogger(__name__)
 
 SCAKE_MODE_CACHE = "buffer"
@@ -72,7 +89,7 @@ class Scake(object):
         return self.graph.query(key=key, default=default, live=live)
 
     def __getitem__(self, key):
-        return self.get(key, default=None, live=None)
+        return self.get(key=key, default=None, live=None)
 
     # def set(self, key, value, force_add=True):
     #     self._conf.set(key, value, force_add=force_add)

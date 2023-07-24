@@ -10,6 +10,7 @@ from omegaconf.listconfig import ListConfig
 from omegaconf.errors import InterpolationKeyError
 from .config_loader import ConfigLoader
 from . import sck_format
+from .sck_log import sck_log
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -23,6 +24,10 @@ class SckGraph():
         self.scake = scake
         self.graph = self._get_empty_graph()
         self.set_config(config)
+
+
+        #debug
+        self.g_debug_count = 0
         pass
 
     def _get_empty_graph(self):
@@ -132,6 +137,13 @@ class SckGraph():
     def compute_exec_flow(self, node_names=[], graph=None):
         """
         """
+
+        # logd("compute_exec_flow", node_names)
+        if node_names == ['/config/bar']:
+            self.g_debug_count += 1
+            if self.g_debug_count == 5:
+                raise Exception("debug count config bar")
+
         if not graph:
             graph = copy.deepcopy(self.graph)
         else:
@@ -139,6 +151,8 @@ class SckGraph():
                 return []
             graph = copy.deepcopy(graph)
         
+        # logd("--> graph", graph)
+
         result = []
         for idx, node_name in enumerate(sorted(graph[GRAPH_NODE].keys())):
             node_info = graph[GRAPH_NODE][node_name]
@@ -155,8 +169,10 @@ class SckGraph():
         # print("selected_nodes", selected_nodes)
         # print("graph[GRAPH_EDGE]", graph[GRAPH_EDGE])
         for nname in node_names:
-            selected_nodes += [node_to for node_from, node_to in graph[GRAPH_EDGE].items() if node_from == nname]
-            
+            selected_nodes += [node_to for node_from, node_to in graph[GRAPH_EDGE].keys() if node_from == nname]
+        
+        # logd("==> selected_nodes", selected_nodes, "result", result)
+
         current_layer = []
         for node_info in result:
             n_out, n_in, node_name, _ = node_info
@@ -165,13 +181,16 @@ class SckGraph():
                     current_layer.append(node_name)
                 pass
 
+        if not current_layer:
+            return []   # avoid infinitive recursive call
+
+        # logd("current_layer", current_layer)
+
         for node_name in current_layer:
             graph = self.delete_node_from_graph(graph, node_name)
 
+        # logd("recursive compute exec flow", [current_layer], node_names)
         return [current_layer] + self.compute_exec_flow(node_names=node_names, graph=graph)
-
-    # def compute_exec_flow_with_nodes(self, node_names=[], graph=None):
-
 
     def add_node(self, node_name):
         self.graph[GRAPH_NODE].setdefault(node_name, {"in": {}, "out": {}})
@@ -217,7 +236,7 @@ class SckGraph():
         # print("-Build_graph:", config, parent_path)
         
         for k, v in config.items():
-            # print("Traverse:", k, v, type(v))
+            logw("Traverse:", k, v, type(v))
             if k in ConfigLoader.RESERVED_KEYS:
                 continue
                 
@@ -259,11 +278,18 @@ class SckGraph():
                         # print("is sckae method", k, target_obj_node_name)
                         # raise Exception()
                         pass
-
                 pass
-            else:   # v is primitive type
+            else:   # v is primitive type            
                 # do not add connection
                 is_add_connection = False
+
+                if sck_format.is_scake_method(k):
+                    # link method to its parent
+                    self.add_edge(
+                        sck_format.convert_list_to_sckref(parent_path+[k,]),
+                        sck_format.convert_list_to_sckref(parent_path)
+                    )
+                    logw("newwwwwww", k, sck_format.convert_list_to_sckref(parent_path+[k,]), "xx>", sck_format.convert_list_to_sckref(parent_path))
 
                 # # main(): foo.bar.__call__
                 # if sck_format.is_scake_method(k):
@@ -277,25 +303,48 @@ class SckGraph():
         pass
     
     def query(self, key=None, keys=[], default=None, live=False):
+        logi("query()", key, keys, default, live)
+
         if key:
+            keys = copy.deepcopy(keys)
             keys += [key,]
-            
+        
+        # standardize and validate query keys
+        new_keys = []
+        for qkey in keys:
+            nkey = qkey
+            if not sck_format.is_scake_ref(qkey) and not qkey.startswith(sck_format.SCK_ANNO_REF_START):
+                nkey = sck_format.SCK_ANNO_REF_START+qkey
+            if not sck_format.is_scake_ref(nkey):
+                raise Exception("Invalid format for query: %s. Correct query format: /a/b/c/d" % nkey)
+            new_keys.append(nkey)
+        keys = new_keys        
+
         exec_layers = self.compute_exec_flow(node_names=keys)   # [["/config/bar/a", ...], ...]
 
-        print("------------------------")
-        print("exec_layers", exec_layers)
-        print(self.config)
-        print("------------------------")
+        logi("result exec_layers", keys, exec_layers)
 
         for layer in exec_layers:
             for node_name in layer:
                 node_resolved_value = self.resolve(key=node_name, default=default, live=live)
-                print("RRRRRRRRR", node_name, "=>", node_resolved_value)
+                logd("RRRRRRRRR", node_name, "=>", node_resolved_value)
 
         # extract result from graph_node
         graph_node = self.graph[GRAPH_NODE]
-        # print("graph_node", graph_node)
-        query_result = {node_name: node_info[GRAPH_NODE_RESOLVED_VALUE] for node_name, node_info in graph_node.items()}
+        if not keys:
+            query_result = {node_name: node_info[GRAPH_NODE_RESOLVED_VALUE] for node_name, node_info in graph_node.items()}
+        else:
+            query_result = {node_name: node_info[GRAPH_NODE_RESOLVED_VALUE] for node_name, node_info in graph_node.items() if node_name in keys}
+        
+        if keys:
+            if len(keys) == 1:
+                query_result = query_result[keys[0]]
+            else:
+                query_result = [query_result[xk] for xk in keys]
+            pass
+
+        logd("Final Query result", keys, "=>", query_result)
+
         return query_result
 
     def resolve(self, key, default=None, live=False):
@@ -307,9 +356,9 @@ class SckGraph():
 
         target = key
         final_result = None
-        is_resolved = False
         p_queue = [{"node": target, "result_description": {}},]
         while len(p_queue)>0:
+            # logd("------------ p_queue", p_queue)
             n_item = len(p_queue)
             for idx in range(n_item):
                 p_item = p_queue[idx]
@@ -319,11 +368,18 @@ class SckGraph():
                 # check "resolved_value" of the node if any
                 if not live and GRAPH_NODE_RESOLVED_VALUE in graph_node.get(target, {}):
                     res_value = graph_node[target][GRAPH_NODE_RESOLVED_VALUE]
-                    is_resolved = True
+                    if not result_description:
+                        final_result = res_value # already the result we want. Eg. 1, 5 "x"
+                        break
+                    else:
+                        self._apply_result_description(result_description, res_value)
+                        pass
                     continue
                 
                 res_value = OmegaConf.select(self.config, sck_format.convert_sckref_to_query(target), default=None)
+                # logd("targettrttttttttttttt", target)
                 if sck_format.is_scake_method(target):
+                    # logd("function detected", target)
                     """
                         mysum2(): __call__
                         # main(): foo.bar.__call__
@@ -333,17 +389,33 @@ class SckGraph():
                     # trigger function
                     parent_node = sck_format.get_parent_node(target)
                     target_obj =  graph_node[parent_node][GRAPH_NODE_RESOLVED_VALUE]
-                    if isinstance(res_value, dict):
+
+                    logw("function resvalue and type", res_value, type(res_value))
+
+                    if sck_format.is_dict(res_value):
                         fname = list(res_value.keys())[0]
                         func_value = {}
+
+                        logw("graph_node method()", graph_node)
                         func_value[fname] = graph_node[sck_format.SCK_REF_DELIMITER.join([target, fname])][GRAPH_NODE_RESOLVED_VALUE] # resolve values
+
+                        # p_queue.append({
+                        #     "node": sck_format.SCK_REF_DELIMITER.join([target, fname]), # /foo/bar/mysum3()/sum
+                        #     "result_description": {
+                        #         "type": "dict",
+                        #         "dict": res_dict,
+                        #         "key": k,
+                        #     }
+                        # })
+
                     else:
                         func_value = res_value # may be a dictionary or a string (call method with no param)
                     
                     method_result = self.__trigger(target_obj, func_value)
                     
-                    print("MMMMMMMMMMMMM", target_obj, func_value, method_result) # TODO, FIXBUG
+                    # logd("MMMMMMMMMMMMM", target_obj, func_value, method_result) # TODO, FIXBUG
 
+                    # for function with no param
                     if not result_description:
                         final_result = method_result
                     else:
@@ -394,7 +466,7 @@ class SckGraph():
                         })
                     pass
                 elif sck_format.is_primitive(res_value):
-                    if sck_format.is_scake_ref(res_value):
+                    if sck_format.is_scake_ref(res_value): # reference
                         p_queue.append({
                             "node": res_value,
                             "result_description": result_description, # keep result description
@@ -435,7 +507,7 @@ class SckGraph():
         init_params = param_dict
 
         # debug
-        _logger.warning("%s -----> %s" % (class_str, str(init_params)))
+        logw("%s -----> %s" % (class_str, str(init_params)))
 
         if isinstance(init_params, dict):
             # -- initialize for dictionary of parameters --
@@ -478,7 +550,7 @@ class SckGraph():
         elif isinstance(init_params, list):
             obj = obj_class(*init_params)
         else:
-            raise Exception('Class parameters type is not supported!')
+            raise Exception('Class parameters type (%s) is not supported!' % str(type(init_params)))
 
         return obj
     
@@ -496,3 +568,8 @@ class SckGraph():
             func = getattr(target_obj, func_name)
             return func()
         return None
+
+logd = sck_log.register(obj_or_class=SckGraph, is_debug=True)
+logi = sck_log.register(obj_or_class=SckGraph, is_info=True)
+logw = sck_log.register(obj_or_class=SckGraph, is_warning=True)
+loge = sck_log.register(obj_or_class=SckGraph, is_error=True)
