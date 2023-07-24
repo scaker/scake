@@ -1,6 +1,7 @@
-from .sck_singleton import SckSingleton
-
+import inspect
 from functools import partial
+
+from .sck_singleton import SckSingleton
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -9,7 +10,7 @@ class SckLog(SckSingleton):
     """
         Usage:
             slog = sck_log.register(name="Flow", obj=graph)
-            slog.lgo()
+            slog("abc", "def", "gnh")
     """
     def __init__(self):
         pass
@@ -22,7 +23,7 @@ class SckLog(SckSingleton):
             slog = sck_log.register(name="GFlow")
             slog("GNode detected", is_info=True)
         """
-        cls_name = obj_or_class.__class__.__name__ if hasattr(obj_or_class, "__class__") else obj_or_class.__name__
+        cls_name = obj_or_class.__name__ if inspect.isclass(obj_or_class) else obj_or_class.__class__.__name__
         return partial(self.log, cls_name=cls_name, name=name, delimiter=delimiter, is_debug=is_debug, is_info=is_info, is_warning=is_warning, is_error=is_error)
 
     def log(self, *messages, cls_name=None, name=None, delimiter=" ", is_debug=False, is_info=False, is_warning=False, is_error=False):
@@ -51,14 +52,5 @@ class SckLog(SckSingleton):
         if is_error:
             _logger.error(final_msg)
         pass
-
-    # def __call__(self, cls_name=None, name=None, messages=[], delimiter="/", is_debug=False, is_info=False, is_warning=False, is_error=False):
-    #     return self.log(
-    #         cls_name=cls_name, 
-    #         name=name, 
-    #         messages=messages, 
-    #         delimiter=delimiter, 
-    #         is_debug=is_debug, is_info=is_info, is_warning=is_warning, is_error=is_error
-    #     )
 
 sck_log = SckLog()

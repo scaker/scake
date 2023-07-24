@@ -3,7 +3,6 @@ from scake import Scake
 def test_scake():
     # scake_flow = Scake(module_dir="/home/coder/project/GITHUB/scake/tests/foo", config="/home/coder/project/GITHUB/scake/tests/conf.yml", is_ray=False)
     scake_flow = Scake(config="/home/coder/project/GITHUB/scake/tests/conf.yml", is_ray=False)
-    # scake_flow()
 
     assert scake_flow["config/bar"] == {"a": 5, "b": 2, "c": 5, "d": 50, "e": 20, "f": 20}
     assert scake_flow["entry/main3"] == 70
