@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import io
 import re
+
 from setuptools import setup
 
 with io.open("scake/__init__.py", "rt", encoding="utf8") as f:

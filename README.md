@@ -31,6 +31,7 @@ Update later
 ```
 pip install pre-commit
 pre-commit install
+#pre-commit autoupdate
 ```
 
 * Step 3. Write test case(s) for the new feature or the bug.

@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
-import sys
-import inspect
-import re
-import operator
 import copy
 import importlib
+import inspect
+import logging
+import sys
+
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from omegaconf.errors import InterpolationKeyError
-from .config_loader import ConfigLoader
-from . import sck_format
-from .sck_log import sck_log
 
-import logging
+from . import sck_format
+from .config_loader import ConfigLoader
+from .sck_log import sck_log
 
 _logger = logging.getLogger(__name__)
 
@@ -27,7 +25,6 @@ class SckGraph:
         self.scake = scake
         self.graph = self._get_empty_graph()
         self.set_config(config)
-        pass
 
     def _get_empty_graph(self):
         return {
@@ -63,9 +60,7 @@ class SckGraph:
             return self._get_node_name_from_method_description(method_name)
         elif isinstance(description, ListConfig):
             raise Exception("TODO")
-            pass
         return None
-        pass
 
     def _is_node_exist(self, node_name):
         return node_name in self.graph[GRAPH_NODE]
@@ -74,8 +69,8 @@ class SckGraph:
         return (node_from, node_to) in self.graph[GRAPH_EDGE]
 
     def list_graph_str(self):
-        edges = list(self.graph[GRAPH_EDGE].keys())
-        sorted_edges = sorted(edges, key=lambda tup: tup[0])
+        # edges = list(self.graph[GRAPH_EDGE].keys())
+        # sorted_edges = sorted(edges, key=lambda tup: tup[0])
 
         result = []
         for idx, node_name in enumerate(sorted(self.graph[GRAPH_NODE].keys())):
@@ -116,7 +111,6 @@ class SckGraph:
 
         for edge in list(graph[GRAPH_EDGE].keys()):
             if node_name in edge:
-                # del graph_result[GRAPH_EDGE][edge]
                 graph_result[GRAPH_EDGE].pop(edge, None)
 
         for node, ndata in list(graph[GRAPH_NODE].items()):
@@ -125,8 +119,6 @@ class SckGraph:
             else:
                 graph_result[GRAPH_NODE][node]["in"].pop(node_name, None)
                 graph_result[GRAPH_NODE][node]["out"].pop(node_name, None)
-                pass
-        # del graph_result[GRAPH_NODE].pop[node_name]
         graph_result[GRAPH_NODE].pop(node_name, None)
         return graph_result
 
@@ -175,7 +167,6 @@ class SckGraph:
                     selected_nodes and node_name in selected_nodes
                 ):
                     current_layer.append(node_name)
-                pass
 
         if not current_layer:
             return []  # avoid infinitive recursive call
@@ -299,8 +290,6 @@ class SckGraph:
                             target_obj_node_name,
                         )
                         is_add_connection = False
-                        pass
-                pass
             else:  # v is primitive type
                 if sck_format.is_scake_method(k):
                     # link method to its parent
@@ -315,8 +304,6 @@ class SckGraph:
                     )
                     # do not add connection
                     is_add_connection = False
-                pass
-            pass
 
             if is_add_connection and parent_path:
                 # create relationship from parent to child (current node)
@@ -329,7 +316,6 @@ class SckGraph:
                         ]
                     ),
                 )
-        pass
 
     def query(self, key=None, keys=[], default=None, live=False):
         if key:
@@ -358,35 +344,36 @@ class SckGraph:
             node_names=keys
         )  # [["/config/bar/a", ...], ...]
 
-        logw("Exec layers for", keys, ".....", exec_layers)
+        # logw("Exec layers for", keys, ".....", exec_layers)
 
+        query_result = {}
         for layer in exec_layers:
             for node_name in layer:
                 node_resolved_value = self.resolve(
                     key=node_name, default=default, live=live
                 )
-                logi("Resolved", node_name, "=>", node_resolved_value)
+                query_result[node_name] = node_resolved_value
+                # logi("Resolved", node_name, "=>", node_resolved_value)
 
-        # extract result from graph_node
-        graph_node = self.graph[GRAPH_NODE]
-        if not keys:
-            query_result = {
-                node_name: node_info[GRAPH_NODE_RESOLVED_VALUE]
-                for node_name, node_info in graph_node.items()
-            }
-        else:
-            query_result = {
-                node_name: node_info[GRAPH_NODE_RESOLVED_VALUE]
-                for node_name, node_info in graph_node.items()
-                if node_name in keys
-            }
+        # # extract result from graph_node
+        # graph_node = self.graph[GRAPH_NODE]
+        # if not keys:
+        #     query_result = {
+        #         node_name: node_info[GRAPH_NODE_RESOLVED_VALUE]
+        #         for node_name, node_info in graph_node.items()
+        #     }
+        # else:
+        #     query_result = {
+        #         node_name: node_info[GRAPH_NODE_RESOLVED_VALUE]
+        #         for node_name, node_info in graph_node.items()
+        #         if node_name in keys
+        #     }
 
         if keys:
             if len(keys) == 1:
                 query_result = query_result[keys[0]]
             else:
                 query_result = [query_result[xk] for xk in keys]
-            pass
 
         return query_result
 
@@ -403,22 +390,22 @@ class SckGraph:
             {"node": target, "result_description": {}},
         ]
         while len(p_queue) > 0:
-            logw("|=======p queue=======|", p_queue)
+            # logw("|=======p queue=======|", p_queue)
             n_item = len(p_queue)
             for idx in range(n_item):
                 p_item = p_queue[idx]
                 target = p_item["node"]
                 result_description = p_item["result_description"]
 
-                logd(
-                    "->Check cache",
-                    "live mode",
-                    live,
-                    "target",
-                    target,
-                    "node info",
-                    graph_node.get(target, {}),
-                )
+                # logd(
+                #     "->Check cache",
+                #     "live mode",
+                #     live,
+                #     "target",
+                #     target,
+                #     "node info",
+                #     graph_node.get(target, {}),
+                # )
 
                 res_value = OmegaConf.select(
                     self.config,
@@ -443,7 +430,6 @@ class SckGraph:
                         break
                     else:
                         self._apply_result_description(result_description, res_value)
-                        pass
                     continue
 
                 if sck_format.is_scake_method(target):
@@ -456,9 +442,9 @@ class SckGraph:
                     # trigger function
                     parent_node = sck_format.get_parent_node(target)
 
-                    logd(
-                        "....... key", key, "target", target, "parent_node", parent_node
-                    )
+                    # logd(
+                    #     "....... key", key, "target", target, "parent_node", parent_node
+                    # )
 
                     target_obj = graph_node[parent_node][GRAPH_NODE_RESOLVED_VALUE]
 
@@ -482,7 +468,6 @@ class SckGraph:
                         self._apply_result_description(
                             result_description, method_result
                         )
-                    pass
                 elif sck_format.is_dict(res_value):
                     init_result = {}
 
@@ -527,7 +512,6 @@ class SckGraph:
                                     },
                                 }
                             )
-                    pass
                 elif sck_format.is_list(res_value):
                     if not result_description:
                         final_result = []
@@ -550,7 +534,6 @@ class SckGraph:
                                 },
                             }
                         )
-                    pass
                 elif sck_format.is_primitive(res_value):
                     if sck_format.is_scake_ref(res_value):  # reference
                         p_queue.append(
@@ -569,13 +552,10 @@ class SckGraph:
                             self._apply_result_description(
                                 result_description, res_value
                             )
-                            pass
-                    pass
                 else:  # None, key not found?!
                     if not result_description:
                         final_result = default
                         break
-                pass
             p_queue = p_queue[n_item:]
 
         graph_node[key][GRAPH_NODE_RESOLVED_VALUE] = final_result
@@ -646,7 +626,6 @@ class SckGraph:
 
             for k, v in redundant_params.items():
                 setattr(obj, k, v)
-            pass
         elif isinstance(init_params, list):
             obj = obj_class(*init_params)
         else:

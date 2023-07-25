@@ -23,14 +23,11 @@ def test_init_class_from_lib():
     assert mycol["minh"] == 100
     assert scake_flow["/c"] == 100
     assert scake_flow["/a"]["b"] == scake_flow["/a/b"]  # verify the same object
-    pass
 
 
 def test_scake():
     # scake_flow = Scake(module_dir="/home/coder/project/GITHUB/scake/tests/foo", config="/home/coder/project/GITHUB/scake/tests/conf.yml", is_ray=False)
-    scake_flow = Scake(
-        config="/home/coder/project/GITHUB/scake/tests/conf.yml", is_ray=False
-    )
+    scake_flow = Scake(config="tests/conf.yml", is_ray=False)
 
     assert scake_flow["config/bar"] == {
         "a": 5,
@@ -51,12 +48,10 @@ def test_scake():
     bar = scake_flow["foo/bar"]  # bar object
     assert bar.a == 5 and bar.b == 2
     assert hasattr(bar, "c") and hasattr(bar, "d") and hasattr(bar, "e")
-    pass
 
 
 def main():
     test_scake()
-    pass
 
 
 if __name__ == "__main__":

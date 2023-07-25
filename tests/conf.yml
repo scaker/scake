@@ -1,5 +1,5 @@
-_import:
-    - /home/coder/project/GITHUB/scake/tests/foo
+_import:    # absolute or relative path to config YML file
+    - ../foo
 
 scake:
     num_cpus: 4

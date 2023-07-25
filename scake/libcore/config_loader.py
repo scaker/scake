@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
+import logging
 import os
 
 # https://omegaconf.readthedocs.io/en/latest/usage.html#from-a-yaml-file
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
-from omegaconf.errors import ConfigKeyError
-from . import sck_format
 
-import logging
+from . import sck_format
 
 _logger = logging.getLogger(__name__)
 
@@ -77,7 +76,6 @@ class ConfigLoader:
                         const_value=const_value,
                     ),
                 )
-                pass
         elif isinstance(omgconf, ListConfig):
             for idx, v in enumerate(omgconf):
                 result[
@@ -102,7 +100,6 @@ class ConfigLoader:
                         const_value=const_value,
                     ),
                 )
-            pass
         else:  # scalar
             return {}
         return result

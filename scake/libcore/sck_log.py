@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 import inspect
+import logging
 from functools import partial
 
 from .sck_singleton import SckSingleton
-
-import logging
 
 _logger = logging.getLogger(__name__)
 
@@ -91,7 +90,6 @@ class SckLog(SckSingleton):
 
         if is_error:
             _logger.error(final_msg)
-        pass
 
 
 sck_log = SckLog()
