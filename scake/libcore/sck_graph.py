@@ -21,8 +21,11 @@ GRAPH_NODE_RESOLVED_VALUE = "resolved_value"
 
 
 class SckGraph:
-    def __init__(self, scake, config=None):
+    # @plazy.tictoc()
+    def __init__(self, scake, config=None, all_refs=[]):
         self.scake = scake
+        self.config = config
+        self.all_refs = all_refs
         self.graph = self._get_empty_graph()
         self.set_config(config)
 
@@ -223,6 +226,16 @@ class SckGraph:
             config = self.config
 
         if not sck_format.is_dict(config):
+            # but it's a reference
+            if sck_format.is_scake_ref(config, all_refs=self.all_refs):
+                # create dependency
+                node_to = config  # /libcore/augmentation/totensor
+                self.add_edge(
+                    sck_format.convert_list_to_sckref(
+                        parent_path
+                    ),  # /config/augmentation/compose/0
+                    node_to,
+                )
             return
 
         for k, v in config.items():
@@ -230,7 +243,7 @@ class SckGraph:
                 continue
 
             is_add_connection = True
-            if sck_format.is_scake_ref(v):
+            if sck_format.is_scake_ref(v, all_refs=self.all_refs):
                 node_from = sck_format.convert_list_to_sckref(
                     parent_path
                     + [
@@ -318,8 +331,9 @@ class SckGraph:
                 )
 
     def query(self, key=None, keys=[], default=None, live=False):
+        # CHANGE
+        keys = copy.deepcopy(keys)
         if key:
-            keys = copy.deepcopy(keys)
             keys += [
                 key,
             ]
@@ -328,11 +342,11 @@ class SckGraph:
         new_keys = []
         for qkey in keys:
             nkey = qkey
-            if not sck_format.is_scake_ref(qkey) and not qkey.startswith(
-                sck_format.SCK_ANNO_REF_START
-            ):
+            if not sck_format.is_scake_ref(
+                qkey, all_refs=self.all_refs
+            ) and not qkey.startswith(sck_format.SCK_ANNO_REF_START):
                 nkey = sck_format.SCK_ANNO_REF_START + qkey
-            if not sck_format.is_scake_ref(nkey):
+            if not sck_format.is_scake_ref(nkey, all_refs=self.all_refs):
                 raise Exception(
                     "Invalid format for query: %s. Correct query format: /a/b/c/d"
                     % nkey
@@ -345,6 +359,8 @@ class SckGraph:
         )  # [["/config/bar/a", ...], ...]
 
         # logw("Exec layers for", keys, ".....", exec_layers)
+        # logi("list_graph_str", self.list_graph_str())
+        # logi("self.config", self.config)
 
         query_result = {}
         for layer in exec_layers:
@@ -478,6 +494,7 @@ class SckGraph:
                         class_str, _ = sck_format.extract_class_str_and_param_dict(
                             res_value
                         )
+                        # logd("sck_format.SCK_REF_DELIMITER.join([target, class_str])", sck_format.SCK_REF_DELIMITER.join([target, class_str]))
                         param_dict = graph_node[
                             sck_format.SCK_REF_DELIMITER.join([target, class_str])
                         ][GRAPH_NODE_RESOLVED_VALUE]
@@ -499,6 +516,8 @@ class SckGraph:
                         # do nothing!
                         pass
                     else:
+                        if not res_value:  # empty dict
+                            pass
                         for k, v in res_value.items():
                             p_queue.append(
                                 {
@@ -535,7 +554,9 @@ class SckGraph:
                             }
                         )
                 elif sck_format.is_primitive(res_value):
-                    if sck_format.is_scake_ref(res_value):  # reference
+                    if sck_format.is_scake_ref(
+                        res_value, all_refs=self.all_refs
+                    ):  # reference
                         p_queue.append(
                             {
                                 "node": res_value,
@@ -579,6 +600,8 @@ class SckGraph:
         obj_class = getattr(importlib.import_module(module_name), class_name)
         # -----------------------------
         init_params = param_dict
+
+        logd("Initializing object %s @ %s" % (str(obj_class), str(init_params)))
 
         if isinstance(init_params, dict):
             # -- initialize for dictionary of parameters --
@@ -632,11 +655,6 @@ class SckGraph:
             raise Exception(
                 "Class parameters type (%s) is not supported!" % str(type(init_params))
             )
-
-        logd(
-            "Initialized object %s @ %s => %s"
-            % (str(obj_class), str(init_params), str(obj))
-        )
 
         return obj
 

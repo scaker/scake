@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import inspect
 import logging
 import os
 import sys
@@ -30,22 +31,36 @@ _logger = logging.getLogger(__name__)
 
 
 class Scake(object):
-    def __init__(self, module_dir=[], config={}, is_ray=False, is_live=False):
+    # @plazy.tictoc()
+    def __init__(self, config={}, module_dir=[], is_ray=False, is_live=False):
         self.module_dir = module_dir
         self.config = config
         self.is_ray = is_ray
         self.is_live = is_live
 
-        self._conf = ConfigLoader(conf=self.config)
-        self.graph = SckGraph(scake=self, config=self._conf.get_config())
-        self._cache_flatten = OmegaConf.to_container(
+        try:
+            conf_home = (
+                os.path.dirname(os.path.abspath(config))
+                if os.path.isfile(config)
+                else os.path.dirname(os.path.abspath(inspect.stack()[1].filename))
+            )
+        except Exception:
+            conf_home = False
+        self._conf = ConfigLoader(conf=self.config, home_path=conf_home)
+        self._conf_flatten = OmegaConf.to_container(
             ConfigLoader(
                 conf=self.config,
                 is_set_const_flatten_value=False,
                 const_flatten_value=None,
                 is_use_flatten=True,
+                home_path=conf_home,
             ).get_config(),
             resolve=False,
+        )
+        self.graph = SckGraph(
+            scake=self,
+            config=self._conf.get_config(),
+            all_refs=list(self._conf_flatten.keys()),
         )
 
         if isinstance(module_dir, (tuple, list)):
@@ -60,18 +75,20 @@ class Scake(object):
             ray.init(num_cpus=num_cpus)
             _logger.info("Initialized RAY server with %d cores!" % num_cpus)
 
+        # _logger.info("Done init Scake, elapsed time info: %s", str(plazy.get_tictoc()))
+
     def load_modules(self, module_dirs):
         if not module_dirs:
             return
         for md in module_dirs:
             self.load_module(md)
 
+    # @plazy.tictoc()
     def load_module(self, module_dir):
         if not module_dir:
             return
         if os.path.isdir(module_dir):  # abs path
             sys.path.append(module_dir)
-            print("Loaded path:", module_dir)
         else:
             sys.path.append(
                 os.path.abspath(os.path.join(os.path.dirname(__file__), module_dir))

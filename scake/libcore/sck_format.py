@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os
+
 from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 
@@ -55,8 +57,21 @@ def convert_list_to_sckref(values):
     return SCK_ANNO_REF_START + SCK_REF_DELIMITER.join(values)
 
 
-def is_scake_ref(value):
-    if isinstance(value, str) and value.startswith(SCK_ANNO_REF_START):
+def is_scake_ref(value, all_refs=[]):
+    # the value maybe file path so we check it first
+    try:
+        if os.path.isfile(value) or os.path.isdir(value):
+            return False
+    except Exception:
+        # error while trying to check file path -> it's not a path of file, just skip it
+        pass
+
+    if (
+        isinstance(value, str)
+        and value.startswith(SCK_ANNO_REF_START)
+        and not value.endswith("/")
+        and (not all_refs or all_refs and value in all_refs)
+    ):
         return True
     else:
         return False

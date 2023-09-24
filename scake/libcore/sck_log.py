@@ -20,8 +20,8 @@ class SckLog(SckSingleton):
 
     def register(
         self,
-        name=None,
         obj_or_class=None,
+        name=None,
         delimiter=" ",
         is_debug=False,
         is_info=False,
@@ -61,6 +61,7 @@ class SckLog(SckSingleton):
         is_info=False,
         is_warning=False,
         is_error=False,
+        no_prefix=False,
     ):
         """
         "[$SckGraph][exec] <val1> | <val2> | <val3>"
@@ -68,8 +69,18 @@ class SckLog(SckSingleton):
         # cls_name x name => prefix
         prefix = []
         prefix.append(f"[${cls_name}]") if cls_name else None
-        prefix.append(f"[{name}") if name else None
+        parent_caller = inspect.stack()[1]
+        parent_caller_funcname = (
+            parent_caller.function
+        )  # https://stackoverflow.com/a/900404 | for Python 3.5+
+        parent_caller_lineno = parent_caller.lineno
+        parent_func_line = f"{parent_caller_funcname}:{parent_caller_lineno}"
+        name = name or parent_func_line
+        prefix.append(f"[{name}]") if name else None
         prefix = "".join(prefix)
+
+        if no_prefix:
+            prefix = False
 
         # messages[] x delimiter => msg_str
         msg_str = delimiter.join([str(m) for m in messages])
