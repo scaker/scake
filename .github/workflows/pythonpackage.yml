@@ -39,4 +39,3 @@ jobs:
         fail_ci_if_error: false # optional (default = false)
         verbose: true # optional (default = false)
         #yml: ./codecov.yml
-    

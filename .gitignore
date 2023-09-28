@@ -1,4 +1,6 @@
 ./test_scake.py
+tests/attis
+tests/test_perf.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -4,8 +4,6 @@ import logging
 import os
 import sys
 
-from omegaconf import OmegaConf
-
 from .libcore.config_loader import ConfigLoader
 from .libcore.sck_graph import SckGraph
 
@@ -44,21 +42,12 @@ class Scake(object):
             )
         except Exception:
             conf_home = False
+
         self._conf = ConfigLoader(conf=self.config, home_path=conf_home)
-        self._conf_flatten = OmegaConf.to_container(
-            ConfigLoader(
-                conf=self.config,
-                is_set_const_flatten_value=False,
-                const_flatten_value=None,
-                is_use_flatten=True,
-                home_path=conf_home,
-            ).get_config(),
-            resolve=False,
-        )
         self.graph = SckGraph(
             scake=self,
             config=self._conf.get_config(),
-            all_refs=list(self._conf_flatten.keys()),
+            all_refs=self._conf.get_flatten_refs(),
         )
 
         if self.module_dir:
@@ -80,11 +69,20 @@ class Scake(object):
         if not module_dir:
             return
 
-        module_dir_with_conf_dir = os.path.join(conf_dir, module_dir) if conf_dir else False
-        module_dir_with_current_py_dir = os.path.join(os.path.dirname(__file__), module_dir)
+        module_dir_with_conf_dir = (
+            os.path.join(conf_dir, module_dir) if conf_dir else False
+        )
+        module_dir_with_current_py_dir = os.path.join(
+            os.path.dirname(__file__), module_dir
+        )
         module_dir_abs = os.path.abspath(module_dir)
 
-        for mdir in (module_dir_with_conf_dir, module_dir_abs, module_dir, module_dir_with_current_py_dir):
+        for mdir in (
+            module_dir_with_conf_dir,
+            module_dir_abs,
+            module_dir,
+            module_dir_with_current_py_dir,
+        ):
             if mdir and os.path.isdir(mdir):
                 sys.path.append(mdir)
                 break

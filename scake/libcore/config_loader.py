@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+from functools import reduce  # Python 3.5+
 
 # https://omegaconf.readthedocs.io/en/latest/usage.html#from-a-yaml-file
 from omegaconf import OmegaConf
@@ -8,9 +9,56 @@ from omegaconf.dictconfig import DictConfig
 from omegaconf.listconfig import ListConfig
 
 from . import sck_format
+from .sck_format import SCK_ANNO_REF_START, SCK_REF_DELIMITER
 from .sck_log import sck_log
 
 _logger = logging.getLogger(__name__)
+
+# https://stackoverflow.com/a/41689055
+
+
+def flatten(d, pref=""):
+    return reduce(
+        lambda new_d, kv: isinstance(kv[1], dict)
+        and {**new_d, **flatten(kv[1], pref + kv[0])}
+        or {**new_d, pref + kv[0]: kv[1]},
+        d.items(),
+        {},
+    )
+
+
+# https://stackoverflow.com/a/72988392
+
+
+def flatten2(it=None, sep="."):
+    ot = {}
+
+    if isinstance(it, dict):
+        stack = list(it.items())[::-1]
+    elif isinstance(it, list):
+        stack = list(enumerate(it))[::-1]
+
+    while stack:
+        head = stack.pop()
+
+        if isinstance(head[1], dict):
+            stack = (
+                stack
+                + [(f"{head[0]}{sep}{item[0]}", item[1]) for item in head[1].items()][
+                    ::-1
+                ]
+            )
+        elif isinstance(head[1], list):
+            stack = (
+                stack
+                + [
+                    (f"{head[0]}{sep}{item[0]}", item[1]) for item in enumerate(head[1])
+                ][::-1]
+            )
+        else:
+            ot[head[0]] = head[1]
+
+    return ot
 
 
 class ConfigLoader:
@@ -26,9 +74,6 @@ class ConfigLoader:
         conf={},
         base_config={},
         is_skip_error=False,
-        is_set_const_flatten_value=False,
-        const_flatten_value=None,
-        is_use_flatten=False,
         home_path=None,
     ):
         self.conf = conf
@@ -38,18 +83,34 @@ class ConfigLoader:
 
         self.config = self.load_config(
             self.conf, self.base_config, self.is_skip_error
-        )  # OmegaConf object
-        self.const_flatten_value = const_flatten_value
-        self.cfg_flatten = self.flatten(
-            self.config,
-            is_set_const_value=is_set_const_flatten_value,
-            const_value=const_flatten_value,
-        )
-        self.is_use_flatten = is_use_flatten
-        if self.is_use_flatten:
-            self.config = self.cfg_flatten
+        )  # OmegaConf
+
+        # Slow code, poor performance
+        # self.cfg_flatten = self.flatten(
+        #     self.config,
+        #     is_set_const_value=is_set_const_flatten_value,
+        #     const_value=const_flatten_value,
+        # )
+        # self.is_use_flatten = is_use_flatten
+        # if self.is_use_flatten:
+        #     self.config = self.cfg_flatten
 
         # s_log("Loadded config", self.config, is_debug=True)
+
+    def get_flatten_refs(self):
+        result = flatten2(self.to_dict(resolve=False), SCK_REF_DELIMITER)
+        res_keys = list(result.keys())
+        new_keys = []
+        for rk in res_keys:  # config/bar/a
+            items = rk.split(SCK_REF_DELIMITER)
+            if len(items) > 1:
+                for i in range(len(items) - 1):
+                    index = i + 1
+                    new_keys.append(SCK_REF_DELIMITER.join(items[:-index]))
+        new_keys = list(set(new_keys))
+        final_result = res_keys + new_keys
+        final_result = [SCK_ANNO_REF_START + k for k in final_result]
+        return final_result
 
     # @plazy.tictoc()
     def flatten(
@@ -219,9 +280,6 @@ class ConfigLoader:
 
     def get_config(self):
         return self.config
-
-    def get_flatten_config(self):
-        return self.cfg_flatten
 
     def to_dict(self, resolve=True):
         return OmegaConf.to_container(self.config, resolve=resolve)
