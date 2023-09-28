@@ -26,8 +26,8 @@ def test_init_class_from_lib():
 
 
 def test_scake():
-    # scake_flow = Scake(module_dir="/home/coder/project/GITHUB/scake/tests/foo", config="/home/coder/project/GITHUB/scake/tests/conf.yml", is_ray=False)
-    scake_flow = Scake(config="tests/conf.yml", is_ray=False)
+    # scake_flow = Scake(module_dir="/home/coder/project/GITHUB/scake/tests/foo", config="/home/coder/project/GITHUB/scake/tests/conf.yml")
+    scake_flow = Scake(config="tests/conf.yml")
 
     assert scake_flow["config/bar"] == {
         "a": 5,
