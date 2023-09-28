@@ -4,7 +4,6 @@ import logging
 import os
 import sys
 
-import ray
 from omegaconf import OmegaConf
 
 from .libcore.config_loader import ConfigLoader
@@ -32,10 +31,9 @@ _logger = logging.getLogger(__name__)
 
 class Scake(object):
     # @plazy.tictoc()
-    def __init__(self, config={}, module_dir=[], is_ray=False, is_live=False):
+    def __init__(self, config={}, module_dir=[], is_live=False):
         self.module_dir = module_dir
         self.config = config
-        self.is_ray = is_ray
         self.is_live = is_live
 
         try:
@@ -69,13 +67,6 @@ class Scake(object):
             else:
                 self.load_module(self.module_dir)
         self.load_modules(self._conf.get("_import", []), conf_dir=conf_home)
-
-        # initialize ray pool
-        if self.is_ray:
-            num_cpus = self.get("scake.num_cpus", 4)
-            ray.init(num_cpus=num_cpus)
-            _logger.info("Initialized RAY server with %d cores!" % num_cpus)
-
         # _logger.info("Done init Scake, elapsed time info: %s", str(plazy.get_tictoc()))
 
     def load_modules(self, module_dirs, conf_dir=False):
