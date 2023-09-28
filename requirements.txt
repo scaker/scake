@@ -1,5 +1,5 @@
-flake8>=6.0.0
 plazy>=0.1.6
+flake8
 pytest
 omegaconf
 ray
