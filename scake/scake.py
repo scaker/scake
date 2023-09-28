@@ -63,11 +63,12 @@ class Scake(object):
             all_refs=list(self._conf_flatten.keys()),
         )
 
-        if isinstance(module_dir, (tuple, list)):
-            self.load_modules(self.module_dir)
-        else:
-            self.load_module(self.module_dir)
-        self.load_modules(self._conf.get("_import", []))
+        if self.module_dir:
+            if isinstance(self.module_dir, (tuple, list)):
+                self.load_modules(self.module_dir)
+            else:
+                self.load_module(self.module_dir)
+        self.load_modules(self._conf.get("_import", []), conf_dir=conf_home)
 
         # initialize ray pool
         if self.is_ray:
@@ -77,22 +78,38 @@ class Scake(object):
 
         # _logger.info("Done init Scake, elapsed time info: %s", str(plazy.get_tictoc()))
 
-    def load_modules(self, module_dirs):
+    def load_modules(self, module_dirs, conf_dir=False):
         if not module_dirs:
             return
         for md in module_dirs:
-            self.load_module(md)
+            self.load_module(md, conf_dir=conf_dir)
 
     # @plazy.tictoc()
-    def load_module(self, module_dir):
+    def load_module(self, module_dir, conf_dir=False):
         if not module_dir:
             return
-        if os.path.isdir(module_dir):  # abs path
-            sys.path.append(module_dir)
-        else:
-            sys.path.append(
-                os.path.abspath(os.path.join(os.path.dirname(__file__), module_dir))
-            )
+
+        module_dir_with_conf_dir = os.path.join(conf_dir, module_dir) if conf_dir else False
+        module_dir_with_current_py_dir = os.path.join(os.path.dirname(__file__), module_dir)
+        module_dir_abs = os.path.abspath(module_dir)
+
+        for mdir in (module_dir_with_conf_dir, module_dir_abs, module_dir, module_dir_with_current_py_dir):
+            if mdir and os.path.isdir(mdir):
+                sys.path.append(mdir)
+                break
+
+        # if os.path.isdir(module_dir):  # abs path
+        #     sys.path.append(module_dir)
+        #     _logger.error("debug loaded %s", str(module_dir))
+        # else: # may be a relative path, try conf_dir
+        #     if os.path.isdir(module_dir_with_conf_dir):
+        #         sys.path.append(os.path.abspath(module_dir_with_conf_dir))
+
+        #         _logger.error("debug loaded %s", str(os.path.abspath(module_dir_with_conf_dir)))
+        #     elif os.path.isdir(module_dir_with_current_py_dir):
+        #         sys.path.append(os.path.abspath(module_dir_with_current_py_dir))
+
+        #         _logger.error("debug loaded %s", str(os.path.abspath(module_dir_with_current_py_dir)))
 
     def get(self, key, default=None, live=None):
         """
